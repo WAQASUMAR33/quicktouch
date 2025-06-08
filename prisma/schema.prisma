@@ -1,0 +1,139 @@
+generator client {
+  provider = "prisma-client-js"
+  // Removed output = "../generated/prisma" to use default location (node_modules/@prisma/client)
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id              Int      @id @default(autoincrement())
+  email           String   @unique
+  password        String
+  name            String?
+  isEmailVerified Boolean  @default(false)
+  verificationToken String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model Supplier {
+  sup_id      Int       @id @default(autoincrement())
+  sup_name    String
+  sup_address String
+  sup_phoneNo String
+  sup_taxNo   String    @unique
+
+  sup_balance Float     @default(0.0)
+  created_at  DateTime  @default(now())
+  updated_at  DateTime  @updatedAt
+  supTrnx     SupTrnx[]
+  sale        Sale[]
+  @@index([sup_taxNo])
+}
+
+model Dealer {
+  dealer_id      Int          @id @default(autoincrement())
+  dealer_name    String
+  dealer_address String
+  dealer_balance Float        @default(0.0)
+  dealer_city    String
+  dealer_route   String
+  created_at     DateTime     @default(now())
+  updated_at     DateTime     @updatedAt
+  saleDetails    SaleDetails[]
+  dealerTrnx     DealerTrnx[]
+}
+
+model Tax {
+  tax_id     Int      @id @default(autoincrement())
+  tax_name   String
+  tax_per    Float
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+}
+
+model Product {
+  p_id        Int          @id @default(autoincrement())
+  p_title     String
+  sales       Sale[]
+  saleDetails SaleDetails[]
+  created_at  DateTime     @default(now())
+  updated_at  DateTime     @updatedAt
+}
+
+model Sale {
+  sale_id        Int          @id @default(autoincrement())
+  p_id           Int
+  product        Product      @relation(fields: [p_id], references: [p_id], onDelete: Restrict)
+  sup_id           Int
+  supplier        Supplier      @relation(fields: [sup_id], references: [sup_id], onDelete: Restrict)
+  amount_per_bag Float
+  no_of_bags     Int
+  freight_per_bag   Float
+  total_amount   Float
+  tax_1          Float?       @default(0.0)
+  tax_2          Float?       @default(0.0)
+  tax_3          Float?       @default(0.0)
+  net_total      Float
+  vehicle_no     String
+  created_at     DateTime     @default(now())
+  updated_at     DateTime     @updatedAt
+  saleDetails    SaleDetails[]
+  @@index([p_id])
+}
+
+model SaleDetails {
+  sales_details_id        Int      @id @default(autoincrement())
+  sales_id               Int
+  sale                   Sale     @relation(fields: [sales_id], references: [sale_id], onDelete: Cascade)
+  v_no                   String
+  p_id                   Int
+  product                Product  @relation(fields: [p_id], references: [p_id], onDelete: Restrict)
+  d_id                   Int
+  dealer                 Dealer   @relation(fields: [d_id], references: [dealer_id], onDelete: Restrict)
+  no_of_bags             Int
+  unit_rate              Float
+  freight                Float
+  total_amount           Float
+  tax_1                  Float?   @default(0.0)
+  tax_2                  Float?   @default(0.0)
+  tax_3                  Float?   @default(0.0)
+  total_amount_without_tax Float
+  total_amount_with_tax   Float
+  created_at             DateTime @default(now())
+  updated_at             DateTime @updatedAt
+  @@index([sales_id])
+  @@index([p_id])
+  @@index([d_id])
+}
+
+model SupTrnx {
+  trnx_id     Int      @id @default(autoincrement())
+  sup_id      Int
+  supplier    Supplier @relation(fields: [sup_id], references: [sup_id], onDelete: Restrict)
+  pre_balance Float
+  amount_in   Float    @default(0.0)
+  amount_out  Float    @default(0.0)
+  balance     Float
+  details     String
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+  @@index([sup_id])
+}
+
+model DealerTrnx {
+  trnx_id     Int      @id @default(autoincrement())
+  d_id        Int
+  dealer      Dealer   @relation(fields: [d_id], references: [dealer_id], onDelete: Restrict)
+  pre_balance Float
+  amount_in   Float    @default(0.0)
+  amount_out  Float    @default(0.0)
+  balance     Float
+  details     String
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+  @@index([d_id])
+}
