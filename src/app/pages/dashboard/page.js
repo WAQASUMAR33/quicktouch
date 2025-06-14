@@ -48,7 +48,7 @@ export default function DashboardPage() {
   return (
     <div className="bg-blue-100 h-full flex items-center justify-center">
       <div>
-        <h1 className="text-2xl font-bold mb-4">Welcome to the Dashboard</h1>
+        <h1 className="text-2xl font-bold mb-4">Welcome to the Khawja Traders</h1>
         {error && <p className="text-red-500 mb-4">{error}</p>}
         {user ? (
           <div>

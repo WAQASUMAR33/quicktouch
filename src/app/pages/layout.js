@@ -62,7 +62,7 @@ export default function DashboardLayout({ children }) {
       <div
         className={`${
           isSidebarOpen ? 'w-64' : 'w-16'
-        } bg-blue-700 text-white transition-all duration-300 ease-in-out z-20 hidden md:block`}
+        } bg-gradient-to-r from-blue-600 to-blue-800 text-white transition-all duration-300 ease-in-out z-20 hidden md:block`}
         role="navigation"
         aria-label="Sidebar navigation"
       >
@@ -89,7 +89,7 @@ export default function DashboardLayout({ children }) {
       <div className="flex-1 flex flex-col overflow-hidden">
         <Navbar toggleSidebar={toggleSidebar} isSidebarOpen={isSidebarOpen} />
         <main
-          className="flex-1 overflow-y-auto p-6 bg-gray-100"
+          className="flex-1 overflow-y-auto p-1 bg-gray-100"
           role="main"
           aria-label="Main content"
         >

@@ -53,7 +53,7 @@ export default function LoginPage() {
       if (data.message === 'Login successful') {
         console.log('Initiating redirect to /dashboard in 2 seconds');
         setTimeout(async () => {
-          await router.push('/dashboard');
+          await router.push('/pages/dashboard');
           console.log('Redirect completed');
         }, 2000);
       } else {
@@ -70,15 +70,12 @@ export default function LoginPage() {
     <div className="min-h-screen flex">
       <div className="hidden lg:block w-1/2 relative">
         <Image
-          src="https://images.unsplash.com/photo-1600585154340-be6161a56a0c"
+          src="/khawja_traders.jpg"
           alt="Login Background"
           fill
           className="object-cover"
           priority
         />
-        <div className="absolute inset-0 bg-black bg-opacity-40 flex items-center justify-center">
-          <h1 className="text-white text-4xl font-bold">Welcome Back</h1>
-        </div>
       </div>
 
       <div className="w-full lg:w-1/2 flex items-center justify-center bg-gray-100">
@@ -91,12 +88,7 @@ export default function LoginPage() {
             </div>
           )}
 
-          {apiResponse && (
-            <div className="mb-4 p-3 bg-green-100 text-green-700 rounded">
-              <h3 className="font-bold">API Response:</h3>
-              <pre className="text-sm">{JSON.stringify(apiResponse, null, 2)}</pre>
-            </div>
-          )}
+        
 
           <form onSubmit={handleSubmit} className="space-y-6">
             <div>

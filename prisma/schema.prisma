@@ -25,7 +25,6 @@ model Supplier {
   sup_address String
   sup_phoneNo String
   sup_taxNo   String    @unique
-
   sup_balance Float     @default(0.0)
   created_at  DateTime  @default(now())
   updated_at  DateTime  @updatedAt
@@ -70,15 +69,17 @@ model Sale {
   product        Product      @relation(fields: [p_id], references: [p_id], onDelete: Restrict)
   sup_id           Int
   supplier        Supplier      @relation(fields: [sup_id], references: [sup_id], onDelete: Restrict)
-  amount_per_bag Float
-  no_of_bags     Int
-  freight_per_bag   Float
-  total_amount   Float
-  tax_1          Float?       @default(0.0)
-  tax_2          Float?       @default(0.0)
-  tax_3          Float?       @default(0.0)
+  weight Float
+  no_of_bags            Int
+  amount_per_bag        Float
+  freight_per_bag       Float
+  total_amount          Float
+  total_freight_amount  Float
   net_total      Float
   vehicle_no     String
+  pre_balance    Float
+  payment        Float
+  balance        Float
   created_at     DateTime     @default(now())
   updated_at     DateTime     @updatedAt
   saleDetails    SaleDetails[]
@@ -96,13 +97,13 @@ model SaleDetails {
   dealer                 Dealer   @relation(fields: [d_id], references: [dealer_id], onDelete: Restrict)
   no_of_bags             Int
   unit_rate              Float
-  freight                Float
-  total_amount           Float
-  tax_1                  Float?   @default(0.0)
-  tax_2                  Float?   @default(0.0)
-  tax_3                  Float?   @default(0.0)
-  total_amount_without_tax Float
-  total_amount_with_tax   Float
+  freight_rate           Float
+  total_amount_bags      Float
+  total_amount_freight   Float
+  net_total_amount       Float
+  pre_balance            Float
+  payment                Float
+  balance                Float
   created_at             DateTime @default(now())
   updated_at             DateTime @updatedAt
   @@index([sales_id])

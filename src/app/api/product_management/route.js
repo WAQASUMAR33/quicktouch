@@ -53,35 +53,7 @@ export async function POST(request) {
 // GET: Fetch all products
 export async function GET() {
   try {
-    const products = await prisma.product.findMany({
-      select: {
-        p_id: true,
-        p_title: true,
-        created_at: true,
-        updated_at: true,
-        sales: {
-          select: {
-            sale_id: true,
-            amount_per_bag: true,
-            no_of_bags: true,
-            total_amount: true,
-            created_at: true,
-          },
-        },
-        saleDetails: {
-          select: {
-            sales_details_id: true,
-            sales_id: true,
-            v_no: true,
-            no_of_bags: true,
-            unit_rate: true,
-            total_amount: true,
-            created_at: true,
-          },
-        },
-      },
-    });
-
+    const products = await prisma.product.findMany();
     return NextResponse.json(products, { status: 200 });
   } catch (error) {
     console.error("GET Error:", error);

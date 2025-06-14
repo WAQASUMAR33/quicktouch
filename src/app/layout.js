@@ -1,6 +1,6 @@
 "use client"
 import { Geist, Geist_Mono } from "next/font/google";
-import LoginPage from "./pages/login/page";
+import LoginPage from "./login/page";
 import "./globals.css";
 
 const geistSans = Geist({
