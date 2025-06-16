@@ -54,13 +54,10 @@ export default function Sidebar({ isOpen, toggleSidebar }) {
     { href: '/pages/new_sale', label: 'New Vehicle', icon: PlusCircle },
     { href: '/pages/sale_list', label: 'Sale List', icon: List },
     { href: '/pages/supplier_management', label: 'Supplier Management', icon: Users },
-    { href: '/pages/sup_trnx', label: 'Supplier Trnx', icon: DollarSign },
+    { href: '/pages/sup_trnx', label: 'Supplier Transcations', icon: DollarSign },
     { href: '/pages/dealer_management', label: "Dealer's Management", icon: UserCog },
-    { href: '/pages/dealer_trnx', label: "Dealer's Trnsx", icon: DollarSign },
-    { href: '/pages/sup_trnx', label: 'Supplier Ledger', icon: BookOpen },
-    { href: '/pages/dealers_ledger', label: "Dealer's Ledger", icon: BookOpen },
+    { href: '/pages/dealer_trnx', label: "Dealer Transcations", icon: DollarSign },
     { href: '/pages/product_management', label: 'Product Management', icon: Package },
-    { href: '/pages/sales-list', label: 'Sales List', icon: List },
     { href: '/pages/users', label: 'Users Management', icon: UserPlus },
   ];
 
