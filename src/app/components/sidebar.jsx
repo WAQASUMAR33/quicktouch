@@ -57,7 +57,7 @@ export default function Sidebar({ isOpen, toggleSidebar }) {
     { href: '/pages/sup_trnx', label: 'Supplier Trnx', icon: DollarSign },
     { href: '/pages/dealer_management', label: "Dealer's Management", icon: UserCog },
     { href: '/pages/dealer_trnx', label: "Dealer's Trnsx", icon: DollarSign },
-    { href: '/pages/supplier_ledger', label: 'Supplier Ledger', icon: BookOpen },
+    { href: '/pages/sup_trnx', label: 'Supplier Ledger', icon: BookOpen },
     { href: '/pages/dealers_ledger', label: "Dealer's Ledger", icon: BookOpen },
     { href: '/pages/product_management', label: 'Product Management', icon: Package },
     { href: '/pages/sales-list', label: 'Sales List', icon: List },
@@ -70,7 +70,7 @@ export default function Sidebar({ isOpen, toggleSidebar }) {
       <div className="p-2 flex items-center justify-between border-b border-blue-600">
         {isOpen && (
           <div className="text-sm">
-            <p>Khawja Traders</p>
+            <p>Khawaja Traders</p>
             <p className="text-xs text-blue-200">User</p>
           </div>
         )}

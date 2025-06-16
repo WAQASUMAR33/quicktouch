@@ -49,7 +49,7 @@ export default function Navbar() {
           {/* Logo */}
           <div className="flex-shrink-0">
             <Link href="/" className="text-white text-2xl font-bold tracking-tight">
-              Khawja Traders
+              Khawaja Traders
             </Link>
           </div>
 
