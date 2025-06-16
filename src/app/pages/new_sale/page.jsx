@@ -106,7 +106,7 @@ export default function NewSalePage() {
       // Calculate totals
       updated.totalAmount = updated.unitRate * updated.noOfBags;
       updated.totalFreightAmount = updated.freightPerBag * updated.noOfBags;
-      updated.netTotal = updated.totalAmount + updated.totalFreightAmount;
+      updated.netTotal = updated.totalAmount - updated.totalFreightAmount;
       updated.balance = updated.preBalance + updated.netTotal - updated.payment;
 
       return updated;
@@ -520,7 +520,7 @@ export default function NewSalePage() {
                   className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100"
                 />
               </div>
-              <div>
+              <div className="hidden">
                 <label className="block text-sm font-medium text-gray-700">Previous Balance</label>
                 <input
                   type="number"
@@ -534,9 +534,10 @@ export default function NewSalePage() {
               </div>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
-              <div>
+              <div className="hidden">
                 <label className="block text-sm font-medium text-gray-700">Payment</label>
                 <input
+                  
                   type="number"
                   name="payment"
                   value={saleForm.payment}
@@ -547,7 +548,7 @@ export default function NewSalePage() {
                   required
                 />
               </div>
-              <div>
+              <div className="hidden">
                 <label className="block text-sm font-medium text-gray-700">Balance</label>
                 <input
                   type="number"
@@ -660,7 +661,7 @@ export default function NewSalePage() {
                     className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100"
                   />
                 </div>
-                <div>
+                <div className="hidden"> 
                   <label className="block text-sm font-medium text-gray-700">Previous Balance</label>
                   <input
                     type="number"
@@ -672,7 +673,7 @@ export default function NewSalePage() {
                     required
                   />
                 </div>
-                <div>
+                <div className="hidden">
                   <label className="block text-sm font-medium text-gray-700">Payment</label>
                   <input
                     type="number"
@@ -685,7 +686,7 @@ export default function NewSalePage() {
                     required
                   />
                 </div>
-                <div>
+                <div className="hidden">
                   <label className="block text-sm font-medium text-gray-700">Balance</label>
                   <input
                     type="number"
