@@ -76,6 +76,7 @@ model Sale {
   total_amount          Float
   total_freight_amount  Float
   net_total      Float
+  total_sale_amount  Float @default(0)
   vehicle_no     String
   pre_balance    Float
   payment        Float

@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 
 export default function DealersManagementPage() {
   const [dealers, setDealers] = useState([]);
+  const [filteredDealers, setFilteredDealers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [isPopupOpen, setIsPopupOpen] = useState(false);
@@ -16,6 +17,12 @@ export default function DealersManagementPage() {
     dealerCity: '',
     dealerRoute: '',
   });
+  const [filterData, setFilterData] = useState({
+    dealerName: '',
+    dealerCity: '',
+    dealerRoute: '',
+  });
+  const [selectedDealerIds, setSelectedDealerIds] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(5);
   const router = useRouter();
@@ -38,7 +45,8 @@ export default function DealersManagementPage() {
         });
         if (!response.ok) throw new Error('Failed to fetch dealers');
         const data = await response.json();
-        setDealers(data); // Adjust if API returns paginated data (e.g., data.dealers)
+        setDealers(data);
+        setFilteredDealers(data); // Initialize filtered dealers
       } catch (err) {
         setError(err.message);
       } finally {
@@ -47,6 +55,33 @@ export default function DealersManagementPage() {
     };
     fetchDealers();
   }, [router]);
+
+  // Handle filter input changes
+  const handleFilterChange = (e) => {
+    const { name, value } = e.target;
+    setFilterData((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+  };
+
+  // Apply filters
+  useEffect(() => {
+    const filtered = dealers.filter((dealer) => {
+      const nameMatch = dealer.dealer_name
+        .toLowerCase()
+        .includes(filterData.dealerName.toLowerCase());
+      const cityMatch = dealer.dealer_city
+        .toLowerCase()
+        .includes(filterData.dealerCity.toLowerCase());
+      const routeMatch = dealer.dealer_route
+        .toLowerCase()
+        .includes(filterData.dealerRoute.toLowerCase());
+      return nameMatch && cityMatch && routeMatch;
+    });
+    setFilteredDealers(filtered);
+    setCurrentPage(1); // Reset to first page on filter change
+  }, [filterData, dealers]);
 
   // Handle form input changes
   const handleChange = (e) => {
@@ -128,17 +163,108 @@ export default function DealersManagementPage() {
         });
         if (!response.ok) throw new Error('Failed to delete dealer');
         setDealers((prev) => prev.filter((d) => d.dealer_id !== dealerId));
+        setSelectedDealerIds((prev) => prev.filter((id) => id !== dealerId));
       } catch (err) {
         setError(err.message);
       }
     }
   };
 
+  // Handle checkbox selection
+  const handleSelectDealer = (dealerId) => {
+    setSelectedDealerIds((prev) =>
+      prev.includes(dealerId)
+        ? prev.filter((id) => id !== dealerId)
+        : [...prev, dealerId]
+    );
+  };
+
+  // Handle select all
+  const handleSelectAll = () => {
+    if (selectedDealerIds.length === currentDealers.length) {
+      setSelectedDealerIds([]);
+    } else {
+      setSelectedDealerIds(currentDealers.map((dealer) => dealer.dealer_id));
+    }
+  };
+
+  // Print selected dealers
+  const handlePrint = () => {
+    if (selectedDealerIds.length === 0) {
+      alert('Please select at least one dealer to print.');
+      return;
+    }
+    const selected = filteredDealers.filter((dealer) =>
+      selectedDealerIds.includes(dealer.dealer_id)
+    );
+    const printDateTime = new Date().toLocaleString('en-PK', {
+      timeZone: 'Asia/Karachi',
+      dateStyle: 'full',
+      timeStyle: 'short',
+    });
+    const printWindow = window.open('', '_blank');
+    printWindow.document.write(`
+      <html>
+        <head>
+          <title>Dealer's Balance Sheet</title>
+          <style>
+            body { font-family: Arial, sans-serif; margin: 20px; }
+            .header { text-align: center; margin-bottom: 20px; }
+            .company-name { font-size: 24px; font-weight: bold; }
+            .print-title { font-size: 20px; margin: 10px 0; }
+            .print-datetime { font-size: 14px; color: #555; }
+            table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+            th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+            th { background-color: #f2f2f2; }
+            @media print { .no-print { display: none; } }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <div class="company-name">Khawaja Traders</div>
+            <div class="print-title">Dealer's Balance Sheet</div>
+            <div class="print-datetime">Generated on: ${printDateTime}</div>
+          </div>
+          <table>
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Name</th>
+                <th>Address</th>
+                <th>Balance</th>
+                <th>City</th>
+                <th>Route</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${selected
+                .map(
+                  (dealer) => `
+                    <tr>
+                      <td>${dealer.dealer_id}</td>
+                      <td>${dealer.dealer_name}</td>
+                      <td>${dealer.dealer_address}</td>
+                      <td>${dealer.dealer_balance.toFixed(2)}</td>
+                      <td>${dealer.dealer_city}</td>
+                      <td>${dealer.dealer_route}</td>
+                    </tr>
+                  `
+                )
+                .join('')}
+            </tbody>
+          </table>
+          <button class="no-print" onclick="window.print()">Print</button>
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
+  };
+
   // Pagination logic
   const indexOfLastItem = currentPage * itemsPerPage;
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
-  const currentDealers = dealers.slice(indexOfFirstItem, indexOfLastItem);
-  const totalPages = Math.ceil(dealers.length / itemsPerPage);
+  const currentDealers = filteredDealers.slice(indexOfFirstItem, indexOfLastItem);
+  const totalPages = Math.ceil(filteredDealers.length / itemsPerPage);
 
   const paginate = (pageNumber) => setCurrentPage(pageNumber);
 
@@ -154,12 +280,60 @@ export default function DealersManagementPage() {
     <div className="p-6 bg-gray-50 min-h-screen">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-semibold text-gray-800">Dealers Management</h1>
-        <button
-          onClick={() => openPopup()}
-          className="bg-blue-600 text-white px-4 py-2 rounded-lg shadow-md hover:bg-blue-700 transition duration-200"
-        >
-          Add New Dealer
-        </button>
+        <div className="flex space-x-4">
+          <button
+            onClick={() => openPopup()}
+            className="bg-blue-600 text-white px-4 py-2 rounded-lg shadow-md hover:bg-blue-700 transition duration-200"
+          >
+            Add New Dealer
+          </button>
+          <button
+            onClick={handlePrint}
+            className="bg-green-600 text-white px-4 py-2 rounded-lg shadow-md hover:bg-green-700 transition duration-200"
+          >
+            Print Selected
+          </button>
+        </div>
+      </div>
+
+      {/* Filters */}
+      <div className="mb-6 bg-white p-4 rounded-lg shadow-md">
+        <h2 className="text-lg font-semibold text-gray-700 mb-4">Filter Dealers</h2>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Name</label>
+            <input
+              type="text"
+              name="dealerName"
+              value={filterData.dealerName}
+              onChange={handleFilterChange}
+              className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+              placeholder="Filter by name"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700">City</label>
+            <input
+              type="text"
+              name="dealerCity"
+              value={filterData.dealerCity}
+              onChange={handleFilterChange}
+              className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+              placeholder="Filter by city"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Route</label>
+            <input
+              type="text"
+              name="dealerRoute"
+              value={filterData.dealerRoute}
+              onChange={handleFilterChange}
+              className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+              placeholder="Filter by route"
+            />
+          </div>
+        </div>
       </div>
 
       {error && <p className="text-red-500 text-sm mb-4">{error}</p>}
@@ -168,6 +342,13 @@ export default function DealersManagementPage() {
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-100">
             <tr>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <input
+                  type="checkbox"
+                  checked={selectedDealerIds.length === currentDealers.length && currentDealers.length > 0}
+                  onChange={handleSelectAll}
+                />
+              </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 ID
               </th>
@@ -195,6 +376,13 @@ export default function DealersManagementPage() {
             {currentDealers.map((dealer) => (
               <tr key={dealer.dealer_id} className="hover:bg-gray-50 transition duration-150">
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                  <input
+                    type="checkbox"
+                    checked={selectedDealerIds.includes(dealer.dealer_id)}
+                    onChange={() => handleSelectDealer(dealer.dealer_id)}
+                  />
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                   {dealer.dealer_id}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
@@ -204,7 +392,7 @@ export default function DealersManagementPage() {
                   {dealer.dealer_address}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                  {dealer.dealer_balance}
+                  {dealer.dealer_balance.toFixed(2)}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                   {dealer.dealer_city}

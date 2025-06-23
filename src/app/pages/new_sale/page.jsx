@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -19,6 +20,7 @@ export default function NewSalePage() {
     totalAmount: 0.0,
     totalFreightAmount: 0.0,
     netTotal: 0.0,
+    totalSaleAmount: 0.0,
     vehicleNo: '',
     preBalance: 0.0,
     payment: 0.0,
@@ -27,7 +29,7 @@ export default function NewSalePage() {
   });
   const [saleDetails, setSaleDetails] = useState([
     {
-      id: Date.now().toString(), // Unique ID for each row
+      id: Date.now().toString(),
       dealerId: '',
       vNo: '',
       noOfBags: 0,
@@ -75,11 +77,13 @@ export default function NewSalePage() {
         const suppliersData = await suppliersResp.json();
         const dealersData = await dealersResp.json();
         const productsData = await productsResp.json();
+        console.log('Fetched suppliers:', JSON.stringify(suppliersData, null, 2));
         setSuppliers(Array.isArray(suppliersData) ? suppliersData : []);
         setDealers(Array.isArray(dealersData) ? dealersData : []);
         setProducts(Array.isArray(productsData) ? productsData : []);
       } catch (err) {
         setError(`Failed to load data: ${err.message}`);
+        console.error('Error fetching data:', err);
       } finally {
         setLoading(false);
       }
@@ -87,18 +91,42 @@ export default function NewSalePage() {
     fetchData();
   }, [router]);
 
+  // Update dealer balance
+  useEffect(() => {
+    setSaleDetails((prev) =>
+      prev.map((detail) => {
+        const dealer = dealers.find((d) => d.dealer_id === parseInt(detail.dealerId));
+        return {
+          ...detail,
+          preBalance: dealer ? dealer.pre_balance || 0.0 : 0.0,
+          balance: (dealer ? dealer.pre_balance || 0.0 : 0.0) + detail.netTotalAmount - detail.payment,
+        };
+      })
+    );
+  }, [dealers, saleDetails.map((d) => d.dealerId).join(','), saleDetails.map((d) => d.netTotalAmount).join(','), saleDetails.map((d) => d.payment).join(',')]);
+
+  // Calculate totalSaleAmount and supplier balance
+  useEffect(() => {
+    const totalSaleAmount = saleDetails.reduce((sum, item) => sum + (item.netTotalAmount || 0), 0);
+    setSaleForm((prev) => ({
+      ...prev,
+      totalSaleAmount,
+      balance: prev.preBalance + prev.netTotal,
+    }));
+  }, [saleDetails, saleForm.preBalance, saleForm.netTotal]);
+
   // Handle sale form changes
   const handleSaleChange = (e) => {
     const { name, value } = e.target;
     setSaleForm((prev) => {
       const updated = { ...prev };
-      if (['weight', 'unitRate', 'freightPerBag', 'preBalance', 'payment'].includes(name)) {
+      if (['weight', 'unitRate', 'freightPerBag', 'payment'].includes(name)) {
         updated[name] = parseFloat(value) || 0.0;
       } else {
         updated[name] = value;
       }
 
-      // Calculate noOfBags from weight
+      // Handle weight change
       if (name === 'weight') {
         updated.noOfBags = Math.round(updated.weight * 20);
       }
@@ -107,8 +135,29 @@ export default function NewSalePage() {
       updated.totalAmount = updated.unitRate * updated.noOfBags;
       updated.totalFreightAmount = updated.freightPerBag * updated.noOfBags;
       updated.netTotal = updated.totalAmount - updated.totalFreightAmount;
-      updated.balance = updated.preBalance + updated.netTotal - updated.payment;
 
+      // Handle supplier change
+      if (name === 'supId') {
+        console.log('Selected supId:', value);
+        if (!value || isNaN(parseInt(value))) {
+          updated.preBalance = 0.0;
+          updated.balance = updated.netTotal;
+        } else {
+          const supplier = Array.isArray(suppliers)
+            ? suppliers.find((sup) => sup.sup_id === parseInt(value))
+            : null;
+          console.log('Found supplier:', JSON.stringify(supplier, null, 2));
+          updated.preBalance = supplier ? supplier.sup_balance || 0.0 : 0.0;
+          updated.balance = updated.preBalance + updated.netTotal;
+        }
+      }
+
+      // Update balance for fields affecting netTotal
+      if (['unitRate', 'freightPerBag', 'weight'].includes(name)) {
+        updated.balance = updated.preBalance + updated.netTotal;
+      }
+
+      console.log('Updated saleForm:', JSON.stringify(updated, null, 2));
       return updated;
     });
   };
@@ -123,7 +172,7 @@ export default function NewSalePage() {
         return updated;
       }
       updated[index] = { ...updated[index] };
-      if (['noOfBags', 'unitRate', 'freightRate', 'preBalance', 'payment'].includes(name)) {
+      if (['noOfBags', 'unitRate', 'freightRate', 'payment'].includes(name)) {
         updated[index][name] = parseFloat(value) || 0.0;
       } else {
         updated[index][name] = value;
@@ -135,7 +184,6 @@ export default function NewSalePage() {
       updated[index].netTotalAmount = updated[index].totalAmountBags + updated[index].totalAmountFreight;
       updated[index].balance = updated[index].preBalance + updated[index].netTotalAmount - updated[index].payment;
 
-      console.log(`Updated saleDetails after change at index ${index}:`, updated);
       return updated;
     });
   };
@@ -145,8 +193,14 @@ export default function NewSalePage() {
     if (isAddingDealer) return;
     setIsAddingDealer(true);
     setSaleDetails((prev) => {
+      const totalDealerBags = prev.reduce((sum, detail) => sum + (detail?.noOfBags || 0), 0);
+      if (totalDealerBags >= saleForm.noOfBags && saleForm.noOfBags > 0) {
+        setError('Total dealer bags cannot exceed sale bags');
+        setIsAddingDealer(false);
+        return prev;
+      }
       const updated = [
-        ...prev.filter((detail) => detail && typeof detail === 'object' && detail.id),
+        ...prev,
         {
           id: Date.now().toString(),
           dealerId: '',
@@ -162,10 +216,9 @@ export default function NewSalePage() {
           balance: 0.0,
         },
       ];
-      console.log('saleDetails after adding row:', updated);
+      setTimeout(() => setIsAddingDealer(false), 300);
       return updated;
     });
-    setTimeout(() => setIsAddingDealer(false), 300);
   };
 
   // Remove dealer row
@@ -173,7 +226,7 @@ export default function NewSalePage() {
     if (isRemovingDealer) return;
     setIsRemovingDealer(true);
     setSaleDetails((prev) => {
-      const updated = prev.filter((_, i) => i !== index && _ && typeof _ === 'object' && _.id);
+      const updated = prev.filter((_, i) => i !== index);
       const result = updated.length === 0
         ? [
             {
@@ -192,10 +245,10 @@ export default function NewSalePage() {
             },
           ]
         : updated;
-      console.log('saleDetails after removing row at index', index, ':', result);
+      setTimeout(() => setIsRemovingDealer(false), 300);
       return result;
     });
-    setTimeout(() => setIsRemovingDealer(false), 300);
+    setError('');
   };
 
   // Clean string inputs
@@ -203,7 +256,6 @@ export default function NewSalePage() {
 
   // Validate form before submission
   const validateForm = () => {
-    // Validate Sale fields
     if (!saleForm.pId || isNaN(parseInt(saleForm.pId)) || parseInt(saleForm.pId) <= 0) {
       return 'Please select a valid Product';
     }
@@ -228,17 +280,15 @@ export default function NewSalePage() {
     if (saleForm.preBalance === undefined || saleForm.payment === undefined) {
       return 'Previous Balance and Payment are required';
     }
-    if (isNaN(saleForm.totalAmount) || isNaN(saleForm.totalFreightAmount) || isNaN(saleForm.netTotal)) {
+    if (isNaN(saleForm.totalAmount) || isNaN(saleForm.totalFreightAmount) || isNaN(saleForm.netTotal) || isNaN(saleForm.totalSaleAmount)) {
       return 'Sale calculations are invalid';
     }
 
-    // Validate SaleDetails fields
     if (saleDetails.length === 0 || saleDetails.some((detail) => !detail || typeof detail !== 'object' || !detail.id)) {
       return 'At least one valid dealer detail is required';
     }
     for (const [index, detail] of saleDetails.entries()) {
       if (!detail || typeof detail !== 'object' || !detail.id) {
-        console.warn(`Invalid dealer detail at index ${index}:`, detail);
         return `Dealer row ${index + 1} is invalid`;
       }
       if (!detail.dealerId || isNaN(parseInt(detail.dealerId)) || parseInt(detail.dealerId) <= 0) {
@@ -269,13 +319,9 @@ export default function NewSalePage() {
       }
     }
 
-    // Validate total dealer bags
     const totalDealerBags = saleDetails.reduce((sum, detail) => sum + (detail?.noOfBags || 0), 0);
-    if (totalDealerBags > saleForm.noOfBags) {
-      return 'Total dealer bags cannot exceed sale bags';
-    }
-    if (totalDealerBags === 0) {
-      return 'At least one bag must be assigned to dealers';
+    if (totalDealerBags !== saleForm.noOfBags) {
+      return `Total dealer bags (${totalDealerBags}) must equal sale bags (${saleForm.noOfBags})`;
     }
 
     return null;
@@ -298,8 +344,6 @@ export default function NewSalePage() {
         return;
       }
 
-      console.log('saleDetails before mapping:', saleDetails);
-
       const payload = {
         p_id: parseInt(saleForm.pId),
         sup_id: parseInt(saleForm.supId),
@@ -307,30 +351,29 @@ export default function NewSalePage() {
         no_of_bags: saleForm.noOfBags,
         amount_per_bag: saleForm.unitRate,
         freight_per_bag: saleForm.freightPerBag,
-        total_amount: saleForm.unitRate * saleForm.noOfBags,
-        total_freight_amount: saleForm.freightPerBag * saleForm.noOfBags,
-        net_total: (saleForm.unitRate * saleForm.noOfBags) + (saleForm.freightPerBag * saleForm.noOfBags),
+        total_amount: saleForm.totalAmount,
+        total_freight_amount: saleForm.totalFreightAmount,
+        net_total: saleForm.netTotal,
+        total_sale_amount: saleForm.totalSaleAmount,
         vehicle_no: cleanString(saleForm.vehicleNo),
         pre_balance: saleForm.preBalance,
         payment: saleForm.payment,
-        balance: saleForm.preBalance + ((saleForm.unitRate + saleForm.freightPerBag) * saleForm.noOfBags) - saleForm.payment,
+        balance: saleForm.balance,
         date: saleForm.date,
-        saleDetails: saleDetails
-          .filter((detail) => detail && typeof detail === 'object' && detail.id)
-          .map((detail) => ({
-            v_no: saleForm.vehicleNo,
-            p_id: parseInt(saleForm.pId),
-            d_id: parseInt(detail.dealerId),
-            no_of_bags: detail.noOfBags,
-            unit_rate: detail.unitRate,
-            freight_rate: detail.freightRate,
-            total_amount_bags: detail.totalAmountBags,
-            total_amount_freight: detail.totalAmountFreight,
-            net_total_amount: detail.netTotalAmount,
-            pre_balance: detail.preBalance,
-            payment: detail.payment,
-            balance: detail.balance,
-          })),
+        saleDetails: saleDetails.map((detail) => ({
+          v_no: cleanString(detail.vNo) || cleanString(saleForm.vehicleNo),
+          p_id: parseInt(saleForm.pId),
+          d_id: parseInt(detail.dealerId),
+          no_of_bags: detail.noOfBags,
+          unit_rate: detail.unitRate,
+          freight_rate: detail.freightRate,
+          total_amount_bags: detail.totalAmountBags,
+          total_amount_freight: detail.totalAmountFreight,
+          net_total_amount: detail.netTotalAmount,
+          pre_balance: detail.preBalance,
+          payment: detail.payment,
+          balance: detail.balance,
+        })),
       };
 
       console.log('Submitting payload:', JSON.stringify(payload, null, 2));
@@ -346,16 +389,13 @@ export default function NewSalePage() {
 
       if (!response.ok) {
         const errorData = await response.json();
-        console.error('API Error Response:', errorData);
-        throw new Error(
-          errorData.details || errorData.error || `Failed to create sale (Status: ${response.status})`
-        );
+        throw new Error(errorData.details || errorData.error || 'Failed to create sale');
       }
 
-      router.push('/pages/new_sale');
+      router.push('/pages/dashboard');
     } catch (err) {
       setError(err.message);
-      console.error('Submission Error:', err);
+      console.error('Submission error:', err);
     }
   };
 
@@ -410,7 +450,7 @@ export default function NewSalePage() {
                   <option value="">Select Supplier</option>
                   {suppliers.map((sup) => (
                     <option key={sup.sup_id} value={sup.sup_id}>
-                      {sup.name || sup.supplier_name || sup.sup_name}
+                      {sup.sup_name}
                     </option>
                   ))}
                 </select>
@@ -520,24 +560,31 @@ export default function NewSalePage() {
                   className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100"
                 />
               </div>
-              <div className="hidden">
-                <label className="block text-sm font-medium text-gray-700">Previous Balance</label>
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Total Sale Amount</label>
+                <input
+                  type="number"
+                  name="totalSaleAmount"
+                  value={saleForm.totalSaleAmount}
+                  readOnly
+                  className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100"
+                />
+              </div>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 mt-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Supplier Previous Balance</label>
                 <input
                   type="number"
                   name="preBalance"
                   value={saleForm.preBalance}
-                  onChange={handleSaleChange}
-                  step="0.01"
-                  className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-                  required
+                  readOnly
+                  className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100"
                 />
               </div>
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
-              <div className="hidden">
-                <label className="block text-sm font-medium text-gray-700">Payment</label>
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Supplier Payment</label>
                 <input
-                  
                   type="number"
                   name="payment"
                   value={saleForm.payment}
@@ -548,8 +595,8 @@ export default function NewSalePage() {
                   required
                 />
               </div>
-              <div className="hidden">
-                <label className="block text-sm font-medium text-gray-700">Balance</label>
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Supplier Balance</label>
                 <input
                   type="number"
                   name="balance"
@@ -578,7 +625,7 @@ export default function NewSalePage() {
                     <option value="">Select Dealer</option>
                     {dealers.map((dealer) => (
                       <option key={dealer.dealer_id} value={dealer.dealer_id}>
-                        {dealer.name || dealer.dealer_name}
+                        {dealer.dealer_name}
                       </option>
                     ))}
                   </select>
@@ -661,19 +708,17 @@ export default function NewSalePage() {
                     className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100"
                   />
                 </div>
-                <div className="hidden"> 
+                <div className='hidden'>
                   <label className="block text-sm font-medium text-gray-700">Previous Balance</label>
                   <input
                     type="number"
                     name="preBalance"
                     value={detail.preBalance}
-                    onChange={(e) => handleDetailChange(index, e)}
-                    step="0.01"
-                    className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-                    required
+                    readOnly
+                    className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100"
                   />
                 </div>
-                <div className="hidden">
+                <div className='hidden'>
                   <label className="block text-sm font-medium text-gray-700">Payment</label>
                   <input
                     type="number"
@@ -686,8 +731,8 @@ export default function NewSalePage() {
                     required
                   />
                 </div>
-                <div className="hidden">
-                  <label className="block text-sm font-medium text-gray-700">Balance</label>
+                <div className='hidden'>
+                  <label className="block text-sm font-medium text-gray-700 ">Balance</label>
                   <input
                     type="number"
                     name="balance"

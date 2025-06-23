@@ -41,7 +41,7 @@ export default function SaleListPage() {
           }),
           fetch('/api/products', {
             headers: { Authorization: `Bearer ${token}` },
-          }).catch(() => ({ ok: false })), // Fallback if /api/products doesn't exist
+          }).catch(() => ({ ok: false })),
         ]);
 
         // Handle sales response
@@ -49,7 +49,6 @@ export default function SaleListPage() {
         if (salesResp.ok) {
           salesData = await salesResp.json();
         } else {
-          // Try parsing raw text as JSON (handles cases like the provided error)
           const text = await salesResp.text();
           try {
             salesData = JSON.parse(text);
@@ -73,8 +72,7 @@ export default function SaleListPage() {
         if (productsResp.ok) {
           productsData = await productsResp.json();
         } else {
-          // Fallback: Derive products from sales
-          productsData = Array.from(
+          const productsFromSales = Array.from(
             new Map(
               salesData.map((sale) => [
                 sale.p_id,
@@ -82,6 +80,7 @@ export default function SaleListPage() {
               ])
             ).values()
           ).sort((a, b) => a.p_title.localeCompare(b.p_title));
+          productsData = productsFromSales;
         }
         setProducts(Array.isArray(productsData) ? productsData : []);
 
@@ -134,6 +133,8 @@ export default function SaleListPage() {
     totalRows: filteredSales.length,
     totalBags: filteredSales.reduce((sum, sale) => sum + (sale.no_of_bags || 0), 0),
     totalNetTotal: filteredSales.reduce((sum, sale) => sum + (sale.net_total || 0), 0),
+    totalSaleAmount: filteredSales.reduce((sum, sale) => sum + (sale.total_sale_amount || 0), 0),
+    profit: filteredSales.reduce((sum, sale) => sum + (sale.total_sale_amount || 0) - (sale.net_total || 0), 0),
   };
 
   // Pagination
@@ -158,6 +159,71 @@ export default function SaleListPage() {
     setSelectedSale(null);
   };
 
+  // Print individual dealer details
+  const printDealerDetails = (detail) => {
+    const currentDateTime = format(new Date(), 'dd/MM/yyyy hh:mm a');
+    const printContent =  `
+      <table>
+        <thead>
+          <tr>
+            <th>Dealer</th>
+            <th>Vehicle No</th>
+            <th>No of Bags</th>
+            <th>Unit Rate</th>
+            <th>Freight Rate</th>
+            <th>Net Total</th>
+            <th>Balance</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>${detail.dealer.dealer_name}</td>
+            <td>${detail.v_no}</td>
+            <td>${detail.no_of_bags}</td>
+            <td>${detail.unit_rate.toFixed(2)}</td>
+            <td>${detail.freight_rate.toFixed(2)}</td>
+            <td>${detail.net_total_amount.toFixed(2)}</td>
+            <td>${detail.balance.toFixed(2)}</td>
+          </tr>
+        </tbody>
+      </table>
+    `;
+    const printWindow = window.open('', '', 'height=600,width=800');
+    printWindow.document.write(`
+      <html>
+        <head>
+          <title>Print Dealer Details</title>
+          <style>
+            body { font-family: Arial, sans-serif; padding: 20px; text-align: center; }
+            .header { margin-bottom: 20px; }
+            .header h1 { font-size: 24px; margin: 0; }
+            .header h2 { font-size: 18px; margin: 5px 0; }
+            .header p { font-size: 14px; margin: 5px 0; }
+            table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+            th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+            th { background-color: #f2f2f2; }
+            @media print {
+              body { margin: 0; }
+            }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <h1>Khawaja Traders</h1>
+            <h2>Sale Receipt</h2>
+            <p>Sale ID: ${selectedSale.sale_id}</p>
+            <p>Date & Time: ${currentDateTime}</p>
+          </div>
+          ${printContent}
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
+    printWindow.focus();
+    printWindow.print();
+    printWindow.close();
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-screen bg-gray-50">
@@ -176,7 +242,7 @@ export default function SaleListPage() {
         {/* Status Card */}
         <div className="mb-6 bg-white p-4 rounded-lg shadow-md">
           <h2 className="text-lg font-semibold text-gray-800 mb-4">Status</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-5 gap-4">
             <div className="p-4 bg-blue-50 rounded-md">
               <p className="text-sm font-medium text-gray-700">Total Sales</p>
               <p className="text-xl font-semibold text-blue-600">{status.totalRows}</p>
@@ -189,12 +255,19 @@ export default function SaleListPage() {
               <p className="text-sm font-medium text-gray-700">Total Net Amount</p>
               <p className="text-xl font-semibold text-yellow-600">{status.totalNetTotal.toFixed(2)}</p>
             </div>
+            <div className="p-4 bg-purple-50 rounded-md">
+              <p className="text-sm font-medium text-gray-700">Total Sale Amount</p>
+              <p className="text-xl font-semibold text-purple-600">{status.totalSaleAmount.toFixed(2)}</p>
+            </div>
+            <div className="p-4 bg-red-50 rounded-md">
+              <p className="text-sm font-medium text-gray-700">Profit</p>
+              <p className="text-xl font-semibold text-red-600">{status.profit.toFixed(2)}</p>
+            </div>
           </div>
         </div>
 
         {/* Filters */}
         <div className="mb-6 bg-white p-4 rounded-lg shadow-md">
-         
           <div className="grid grid-cols-1 sm:grid-cols-5 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700">Start Date</label>
@@ -271,8 +344,9 @@ export default function SaleListPage() {
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Product</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Supplier</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Vehicle No</th>
-                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Bags</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Bags</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Net Total</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total Sale Amount</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created At</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
               </tr>
@@ -280,7 +354,7 @@ export default function SaleListPage() {
             <tbody className="bg-white divide-y divide-gray-200">
               {currentSales.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="px-6 py-4 text-center text-gray-500">
+                  <td colSpan={8} className="px-6 py-4 text-center text-gray-500">
                     No sales found
                   </td>
                 </tr>
@@ -291,8 +365,9 @@ export default function SaleListPage() {
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{sale.product.p_title}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{sale.supplier.sup_name}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{sale.vehicle_no}</td>
-                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{sale.no_of_bags}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{sale.no_of_bags}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{sale.net_total.toFixed(2)}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{sale.total_sale_amount.toFixed(2)}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                       {format(new Date(sale.created_at), 'PP')}
                     </td>
@@ -371,26 +446,28 @@ export default function SaleListPage() {
                   <p><strong>Freight per Bag:</strong> {selectedSale.freight_per_bag.toFixed(2)}</p>
                 </div>
                 <div>
-                  <p><strong>Total Amount:</strong> {selectedSale.total_amount.toFixed(2)}</p>
+                  <p><strong>Total Amount:</strong> {selectedSale.total_sale_amount.toFixed(2)}</p>
                   <p><strong>Total Freight Amount:</strong> {selectedSale.total_freight_amount.toFixed(2)}</p>
                   <p><strong>Net Total:</strong> {selectedSale.net_total.toFixed(2)}</p>
-                  <p><strong>Previous Balance:</strong> {selectedSale.pre_balance.toFixed(2)}</p>
+                  <p><strong>Total Sale Amount:</strong> {selectedSale.total_sale_amount.toFixed(2)}</p>
+                  <p><strong>Previous Balance:</strong> {selectedSale.pre_balance?.toFixed(2)}</p>
                   <p><strong>Payment:</strong> {selectedSale.payment.toFixed(2)}</p>
                   <p><strong>Balance:</strong> {selectedSale.balance.toFixed(2)}</p>
                   <p><strong>Created At:</strong> {format(new Date(selectedSale.created_at), 'PPp')}</p>
-                  <p><strong>Updated At:</strong> {format(new Date(selectedSale.updated_at), 'PPp')}</p>
+                  <p><strong>Updated At:</strong> {selectedSale.updated_at ? format(new Date(selectedSale.updated_at), 'PPp') : 'N/A'}</p>
                 </div>
               </div>
-              <h3 className="text-lg font-semibold text-gray-800 mb-4">Dealer Details</h3>
+              <h3 className="text-lg font-semibold text-gray-800 mb-4">Sales Details</h3>
               <div className="overflow-x-auto">
                 <table className="min-w-full divide-y divide-gray-200">
                   <thead className="bg-gray-50">
                     <tr>
+                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                       <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Dealer</th>
                       <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Vehicle No</th>
                       <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">No of Bags</th>
-                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Unit Rate</th>
-                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Freight Rate</th>
+                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider ">Unit Rate</th>
+                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider ">Freight Rate</th>
                       <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Net Total</th>
                       <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Balance</th>
                     </tr>
@@ -398,13 +475,14 @@ export default function SaleListPage() {
                   <tbody className="bg-white divide-y divide-gray-200">
                     {selectedSale.saleDetails.length === 0 ? (
                       <tr>
-                        <td colSpan={7} className="px-4 py-2 text-center text-gray-500">
+                        <td colSpan={8} className="px-4 py-2 text-center text-gray-500">
                           No dealer details found
                         </td>
                       </tr>
                     ) : (
                       selectedSale.saleDetails.map((detail) => (
                         <tr key={detail.sales_details_id}>
+                         
                           <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-900">{detail.dealer.dealer_name}</td>
                           <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-900">{detail.v_no}</td>
                           <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-900">{detail.no_of_bags}</td>
@@ -412,6 +490,15 @@ export default function SaleListPage() {
                           <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-900">{detail.freight_rate.toFixed(2)}</td>
                           <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-900">{detail.net_total_amount.toFixed(2)}</td>
                           <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-900">{detail.balance.toFixed(2)}</td>
+                         <td className="px-4 py-2 whitespace-nowrap text-sm">
+                            <button
+                              onClick={() => printDealerDetails(detail)}
+                              className="text-blue-600 hover:text-blue-800"
+                            >
+                              Print
+                            </button>
+                          </td>
+                        
                         </tr>
                       ))
                     )}

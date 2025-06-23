@@ -3,6 +3,9 @@ import prisma from "../../lib/prisma";
 
 // POST: Create a new sale
 export async function POST(request) {
+  const startTime = Date.now();
+  console.log('Starting POST /api/sale');
+
   try {
     // Parse JSON with error handling
     let data;
@@ -27,6 +30,7 @@ export async function POST(request) {
       "total_amount",
       "total_freight_amount",
       "net_total",
+      "total_sale_amount",
       "vehicle_no",
       "pre_balance",
       "payment",
@@ -94,6 +98,7 @@ export async function POST(request) {
       total_amount: parseFloat(data.total_amount),
       total_freight_amount: parseFloat(data.total_freight_amount),
       net_total: parseFloat(data.net_total),
+      total_sale_amount:  parseFloat(data.total_sale_amount),
       pre_balance: parseFloat(data.pre_balance),
       payment: parseFloat(data.payment),
       balance: parseFloat(data.balance),
@@ -172,6 +177,7 @@ export async function POST(request) {
     }
 
     // Fetch product, supplier, and unique dealers concurrently
+    console.log('Fetching product, supplier, dealers');
     const uniqueDealerIds = [...new Set(data.saleDetails.map((detail) => parseInt(detail.d_id)))];
     const [product, supplier, dealers] = await Promise.all([
       prisma.product.findUnique({
@@ -186,6 +192,7 @@ export async function POST(request) {
         select: { dealer_id: true, dealer_balance: true },
       }),
     ]);
+    console.log(`Fetched data in ${Date.now() - startTime}ms`);
 
     // Validate product exists
     if (!product) {
@@ -207,10 +214,12 @@ export async function POST(request) {
       );
     }
 
-    // Start transaction with increased timeout (10 seconds)
+    // Start transaction with increased timeout (30 seconds)
+    console.log('Starting transaction');
     const result = await prisma.$transaction(
       async (tx) => {
         // Create sale
+        console.log('Creating sale');
         const sale = await tx.sale.create({
           data: {
             p_id: saleNumericFields.p_id,
@@ -223,19 +232,22 @@ export async function POST(request) {
             total_freight_amount: saleNumericFields.total_freight_amount,
             net_total: saleNumericFields.net_total,
             vehicle_no: data.vehicle_no,
+            total_sale_amount : saleNumericFields.total_sale_amount,
             pre_balance: saleNumericFields.pre_balance,
             payment: saleNumericFields.payment,
             balance: saleNumericFields.balance,
+            created_at: new Date(), // Explicitly set created_at
           },
         });
+        console.log(`Sale created in ${Date.now() - startTime}ms`, { sale_id: sale.sale_id });
 
         // Update supplier balance and create SupTrnx
+        console.log('Updating supplier');
         const newSupplierBalance = supplier.sup_balance + saleNumericFields.net_total;
         await tx.supplier.update({
           where: { sup_id: saleNumericFields.sup_id },
           data: { sup_balance: newSupplierBalance },
         });
-
         await tx.supTrnx.create({
           data: {
             sup_id: saleNumericFields.sup_id,
@@ -245,58 +257,69 @@ export async function POST(request) {
             details: `Sale ID: ${sale.sale_id}`,
           },
         });
+        console.log(`Supplier updated in ${Date.now() - startTime}ms`);
 
-        // Create sale details for each entry
-        const saleDetailsIds = [];
+        // Create sale details using createMany
+        console.log('Creating saleDetails');
+        const saleDetailsData = data.saleDetails.map((detail, index) => {
+          const numericFields = saleDetailsNumericFields[index];
+          return {
+            sales_id: sale.sale_id,
+            v_no: detail.v_no,
+            p_id: numericFields.p_id,
+            d_id: numericFields.d_id,
+            no_of_bags: numericFields.no_of_bags,
+            unit_rate: numericFields.unit_rate,
+            freight_rate: numericFields.freight_rate,
+            total_amount_bags: numericFields.total_amount_bags,
+            total_amount_freight: numericFields.total_amount_freight,
+            net_total_amount: numericFields.net_total_amount,
+            pre_balance: numericFields.pre_balance,
+            payment: numericFields.payment,
+            balance: numericFields.balance,
+          };
+        });
+        const saleDetailsResult = await tx.saleDetails.createMany({
+          data: saleDetailsData,
+        });
+        console.log(`SaleDetails created in ${Date.now() - startTime}ms`, { count: saleDetailsResult.count });
+
+        // Update dealer balances and create DealerTrnx
+        console.log('Updating dealers');
+        const dealerUpdates = [];
+        const dealerTrnxData = [];
         for (const [index, detail] of data.saleDetails.entries()) {
           const numericFields = saleDetailsNumericFields[index];
-          const saleDetail = await tx.saleDetails.create({
-            data: {
-              sales_id: sale.sale_id,
-              v_no: detail.v_no,
-              p_id: numericFields.p_id,
-              d_id: numericFields.d_id,
-              no_of_bags: numericFields.no_of_bags,
-              unit_rate: numericFields.unit_rate,
-              freight_rate: numericFields.freight_rate,
-              total_amount_bags: numericFields.total_amount_bags,
-              total_amount_freight: numericFields.total_amount_freight,
-              net_total_amount: numericFields.net_total_amount,
-              pre_balance: numericFields.pre_balance,
-              payment: numericFields.payment,
-              balance: numericFields.balance,
-            },
-          });
-
-          // Update dealer balance and create DealerTrnx
           const dealer = dealers.find((d) => d.dealer_id === numericFields.d_id);
           const newDealerBalance = dealer.dealer_balance + numericFields.net_total_amount;
-          await tx.dealer.update({
-            where: { dealer_id: numericFields.d_id },
-            data: { dealer_balance: newDealerBalance },
+          dealerUpdates.push(
+            tx.dealer.update({
+              where: { dealer_id: numericFields.d_id },
+              data: { dealer_balance: newDealerBalance },
+            })
+          );
+          dealerTrnxData.push({
+            d_id: numericFields.d_id,
+            pre_balance: dealer.dealer_balance,
+            amount_out: numericFields.net_total_amount,
+            balance: newDealerBalance,
+            details: `Sale Details ID: ${sale.sale_id}-${index + 1}`,
           });
-
-          await tx.dealerTrnx.create({
-            data: {
-              d_id: numericFields.d_id,
-              pre_balance: dealer.dealer_balance,
-              amount_out: numericFields.net_total_amount,
-              balance: newDealerBalance,
-              details: `Sale Details ID: ${saleDetail.sales_details_id}`,
-            },
-          });
-
-          saleDetailsIds.push(saleDetail.sales_details_id);
         }
+        await Promise.all(dealerUpdates);
+        await tx.dealerTrnx.createMany({
+          data: dealerTrnxData,
+        });
+        console.log(`Dealers updated in ${Date.now() - startTime}ms`);
 
-        return { sale_id: sale.sale_id, sale_details_ids: saleDetailsIds };
+        return { sale_id: sale.sale_id, sale_details_ids: Array(saleDetailsResult.count).fill(sale.sale_id) };
       },
       {
-        timeout: 10000, // Increased to 10 seconds
+        timeout: 30000, // Maximum reasonable timeout (30 seconds)
       }
     );
 
-    // Return sale_id and sale_details_ids
+    console.log(`Transaction completed in ${Date.now() - startTime}ms`);
     return NextResponse.json(result, { status: 201 });
   } catch (error) {
     console.error("POST Error:", error);
@@ -306,12 +329,19 @@ export async function POST(request) {
         { status: 400 }
       );
     }
+    if (error.message.includes("Unknown argument")) {
+      return NextResponse.json(
+        { error: "Invalid field in sale creation", details: error.message },
+        { status: 400 }
+      );
+    }
     return NextResponse.json(
       { error: "Failed to create sale", details: error.message },
       { status: 500 }
     );
   }
 }
+
 
 // GET: Fetch all sales
 export async function GET() {
@@ -340,6 +370,7 @@ export async function GET() {
         total_amount: true,
         total_freight_amount: true,
         net_total: true,
+        total_sale_amount: true,
         vehicle_no: true,
         pre_balance: true,
         payment: true,
