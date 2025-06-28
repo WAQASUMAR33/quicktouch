@@ -13,6 +13,7 @@ model User {
   email           String   @unique
   password        String
   name            String?
+  role            String?
   isEmailVerified Boolean  @default(false)
   verificationToken String?
   createdAt       DateTime @default(now())
@@ -40,6 +41,8 @@ model Dealer {
   dealer_balance Float        @default(0.0)
   dealer_city    String
   dealer_route   String
+  dealer_phone   String?
+  dealer_cnic    String?
   created_at     DateTime     @default(now())
   updated_at     DateTime     @updatedAt
   saleDetails    SaleDetails[]

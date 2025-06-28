@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -98,8 +97,8 @@ export default function NewSalePage() {
         const dealer = dealers.find((d) => d.dealer_id === parseInt(detail.dealerId));
         return {
           ...detail,
-          preBalance: dealer ? dealer.pre_balance || 0.0 : 0.0,
-          balance: (dealer ? dealer.pre_balance || 0.0 : 0.0) + detail.netTotalAmount - detail.payment,
+          preBalance: dealer ? dealer.dealer_balance || 0.0 : 0.0,
+          balance: (dealer ? dealer.dealer_balance || 0.0 : 0.0) + detail.netTotalAmount - detail.payment,
         };
       })
     );
@@ -111,9 +110,9 @@ export default function NewSalePage() {
     setSaleForm((prev) => ({
       ...prev,
       totalSaleAmount,
-      balance: prev.preBalance + prev.netTotal,
+      balance: prev.preBalance + prev.netTotal - prev.payment,
     }));
-  }, [saleDetails, saleForm.preBalance, saleForm.netTotal]);
+  }, [saleDetails, saleForm.preBalance, saleForm.netTotal, saleForm.payment]);
 
   // Handle sale form changes
   const handleSaleChange = (e) => {
@@ -141,20 +140,20 @@ export default function NewSalePage() {
         console.log('Selected supId:', value);
         if (!value || isNaN(parseInt(value))) {
           updated.preBalance = 0.0;
-          updated.balance = updated.netTotal;
+          updated.balance = updated.netTotal - updated.payment;
         } else {
           const supplier = Array.isArray(suppliers)
             ? suppliers.find((sup) => sup.sup_id === parseInt(value))
             : null;
           console.log('Found supplier:', JSON.stringify(supplier, null, 2));
           updated.preBalance = supplier ? supplier.sup_balance || 0.0 : 0.0;
-          updated.balance = updated.preBalance + updated.netTotal;
+          updated.balance = updated.preBalance + updated.netTotal - updated.payment;
         }
       }
 
       // Update balance for fields affecting netTotal
-      if (['unitRate', 'freightPerBag', 'weight'].includes(name)) {
-        updated.balance = updated.preBalance + updated.netTotal;
+      if (['unitRate', 'freightPerBag', 'weight', 'payment'].includes(name)) {
+        updated.balance = updated.preBalance + updated.netTotal - updated.payment;
       }
 
       console.log('Updated saleForm:', JSON.stringify(updated, null, 2));
@@ -178,10 +177,16 @@ export default function NewSalePage() {
         updated[index][name] = value;
       }
 
+      // Handle dealer change
+      if (name === 'dealerId') {
+        const dealer = dealers.find((d) => d.dealer_id === parseInt(value));
+        updated[index].preBalance = dealer ? dealer.dealer_balance || 0.0 : 0.0;
+      }
+
       // Calculate totals
       updated[index].totalAmountBags = updated[index].unitRate * updated[index].noOfBags;
       updated[index].totalAmountFreight = updated[index].freightRate * updated[index].noOfBags;
-      updated[index].netTotalAmount = updated[index].totalAmountBags + updated[index].totalAmountFreight;
+      updated[index].netTotalAmount = updated[index].totalAmountBags - updated[index].totalAmountFreight;
       updated[index].balance = updated[index].preBalance + updated[index].netTotalAmount - updated[index].payment;
 
       return updated;
@@ -708,7 +713,7 @@ export default function NewSalePage() {
                     className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100"
                   />
                 </div>
-                <div className='hidden'>
+                <div>
                   <label className="block text-sm font-medium text-gray-700">Previous Balance</label>
                   <input
                     type="number"
@@ -718,7 +723,7 @@ export default function NewSalePage() {
                     className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100"
                   />
                 </div>
-                <div className='hidden'>
+                <div className=' hidden'> 
                   <label className="block text-sm font-medium text-gray-700">Payment</label>
                   <input
                     type="number"
@@ -731,8 +736,8 @@ export default function NewSalePage() {
                     required
                   />
                 </div>
-                <div className='hidden'>
-                  <label className="block text-sm font-medium text-gray-700 ">Balance</label>
+                <div className=' hidden'> 
+                  <label className="block text-sm font-medium text-gray-700">Balance</label>
                   <input
                     type="number"
                     name="balance"

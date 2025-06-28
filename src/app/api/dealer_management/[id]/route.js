@@ -66,6 +66,8 @@ export async function PUT(request, { params }) {
         dealer_balance: parseFloat(data.dealer_balance)  ?? parseFloat(dealer.dealer_balance) ,
         dealer_city: data.dealer_city ?? dealer.dealer_city,
         dealer_route: data.dealer_route ?? dealer.dealer_route,
+        dealer_cnic: data.dealer_cnic ?? dealer.dealer_cnic,
+        dealer_phone: data.dealer_phone ?? dealer.dealer_phone
       },
     });
 
@@ -77,6 +79,8 @@ export async function PUT(request, { params }) {
         dealer_balance: updatedDealer.dealer_balance,
         dealer_city: updatedDealer.dealer_city,
         dealer_route: updatedDealer.dealer_route,
+        dealer_cnic: updatedDealer.dealer_cnic,
+        dealer_phone: updatedDealer.dealer_phone,
         created_at: updatedDealer.created_at,
         updated_at: updatedDealer.updated_at,
         message: "Dealer updated successfully",

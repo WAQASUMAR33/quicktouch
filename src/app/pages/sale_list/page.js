@@ -3,8 +3,10 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { format } from 'date-fns';
+import { useAuth } from '../../context/AuthContext';
 
 export default function SaleListPage() {
+  const { role } = useAuth();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [sales, setSales] = useState([]);
@@ -239,32 +241,34 @@ export default function SaleListPage() {
 
         {error && <p className="text-red-500 text-sm mb-4">{error}</p>}
 
-        {/* Status Card */}
-        <div className="mb-6 bg-white p-4 rounded-lg shadow-md">
-          <h2 className="text-lg font-semibold text-gray-800 mb-4">Status</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-5 gap-4">
-            <div className="p-4 bg-blue-50 rounded-md">
-              <p className="text-sm font-medium text-gray-700">Total Sales</p>
-              <p className="text-xl font-semibold text-blue-600">{status.totalRows}</p>
-            </div>
-            <div className="p-4 bg-green-50 rounded-md">
-              <p className="text-sm font-medium text-gray-700">Total Bags</p>
-              <p className="text-xl font-semibold text-green-600">{status.totalBags}</p>
-            </div>
-            <div className="p-4 bg-yellow-50 rounded-md">
-              <p className="text-sm font-medium text-gray-700">Total Net Amount</p>
-              <p className="text-xl font-semibold text-yellow-600">{status.totalNetTotal.toFixed(2)}</p>
-            </div>
-            <div className="p-4 bg-purple-50 rounded-md">
-              <p className="text-sm font-medium text-gray-700">Total Sale Amount</p>
-              <p className="text-xl font-semibold text-purple-600">{status.totalSaleAmount.toFixed(2)}</p>
-            </div>
-            <div className="p-4 bg-red-50 rounded-md">
-              <p className="text-sm font-medium text-gray-700">Profit</p>
-              <p className="text-xl font-semibold text-red-600">{status.profit.toFixed(2)}</p>
+        {/* Status Card - Only for Admin */}
+        {role === 'Admin' && (
+          <div className="mb-6 bg-white p-4 rounded-lg shadow-md">
+            <h2 className="text-lg font-semibold text-gray-800 mb-4">Status</h2>
+            <div className="grid grid-cols-1 sm:grid-cols-5 gap-4">
+              <div className="p-4 bg-blue-50 rounded-md">
+                <p className="text-sm font-medium text-gray-700">Total Sales</p>
+                <p className="text-xl font-semibold text-blue-600">{status.totalRows}</p>
+              </div>
+              <div className="p-4 bg-green-50 rounded-md">
+                <p className="text-sm font-medium text-gray-700">Total Bags</p>
+                <p className="text-xl font-semibold text-green-600">{status.totalBags}</p>
+              </div>
+              <div className="p-4 bg-yellow-50 rounded-md">
+                <p className="text-sm font-medium text-gray-700">Total Net Amount</p>
+                <p className="text-xl font-semibold text-yellow-600">{status.totalNetTotal.toFixed(2)}</p>
+              </div>
+              <div className="p-4 bg-purple-50 rounded-md">
+                <p className="text-sm font-medium text-gray-700">Total Sale Amount</p>
+                <p className="text-xl font-semibold text-purple-600">{status.totalSaleAmount.toFixed(2)}</p>
+              </div>
+              <div className="p-4 bg-red-50 rounded-md">
+                <p className="text-sm font-medium text-gray-700">Profit</p>
+                <p className="text-xl font-semibold text-red-600">{status.profit.toFixed(2)}</p>
+              </div>
             </div>
           </div>
-        </div>
+        )}
 
         {/* Filters */}
         <div className="mb-6 bg-white p-4 rounded-lg shadow-md">
@@ -462,14 +466,14 @@ export default function SaleListPage() {
                 <table className="min-w-full divide-y divide-gray-200">
                   <thead className="bg-gray-50">
                     <tr>
-                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                       <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Dealer</th>
                       <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Vehicle No</th>
                       <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">No of Bags</th>
-                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider ">Unit Rate</th>
-                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider ">Freight Rate</th>
+                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Unit Rate</th>
+                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Freight Rate</th>
                       <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Net Total</th>
                       <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Balance</th>
+                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
@@ -482,7 +486,6 @@ export default function SaleListPage() {
                     ) : (
                       selectedSale.saleDetails.map((detail) => (
                         <tr key={detail.sales_details_id}>
-                         
                           <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-900">{detail.dealer.dealer_name}</td>
                           <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-900">{detail.v_no}</td>
                           <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-900">{detail.no_of_bags}</td>
@@ -490,7 +493,7 @@ export default function SaleListPage() {
                           <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-900">{detail.freight_rate.toFixed(2)}</td>
                           <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-900">{detail.net_total_amount.toFixed(2)}</td>
                           <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-900">{detail.balance.toFixed(2)}</td>
-                         <td className="px-4 py-2 whitespace-nowrap text-sm">
+                          <td className="px-4 py-2 whitespace-nowrap text-sm">
                             <button
                               onClick={() => printDealerDetails(detail)}
                               className="text-blue-600 hover:text-blue-800"
@@ -498,7 +501,6 @@ export default function SaleListPage() {
                               Print
                             </button>
                           </td>
-                        
                         </tr>
                       ))
                     )}

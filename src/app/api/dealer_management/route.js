@@ -21,6 +21,8 @@ export async function POST(request) {
       !data.dealer_name ||
       !data.dealer_address ||
       !data.dealer_city ||
+      !data.dealer_cnic ||
+      !data.dealer_phone ||
       !data.dealer_route
     ) {
       return NextResponse.json(
@@ -51,6 +53,8 @@ export async function POST(request) {
         dealer_balance: dealerBalance,
         dealer_city: data.dealer_city,
         dealer_route: data.dealer_route,
+        dealer_cnic: data.dealer_cnic,
+        dealer_phone: data.dealer_phone
       },
     });
 
@@ -62,6 +66,8 @@ export async function POST(request) {
         dealer_balance: parseFloat(dealer.dealer_balance),
         dealer_city: dealer.dealer_city,
         dealer_route: dealer.dealer_route,
+        dealer_cnic: dealer.dealer_cnic,
+        dealer_phone: dealer.dealer_phone,
         created_at: dealer.created_at,
         updated_at: dealer.updated_at,
         message: "Dealer created successfully",
@@ -80,18 +86,7 @@ export async function POST(request) {
 // GET: Fetch all dealers
 export async function GET() {
   try {
-    const dealers = await prisma.dealer.findMany({
-      select: {
-        dealer_id: true,
-        dealer_name: true,
-        dealer_address: true,
-        dealer_balance: true,
-        dealer_city: true,
-        dealer_route: true,
-        created_at: true,
-        updated_at: true,
-      },
-    });
+    const dealers = await prisma.dealer.findMany();
 
     return NextResponse.json(dealers, { status: 200 });
   } catch (error) {

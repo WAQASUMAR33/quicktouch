@@ -7,7 +7,7 @@ import bcrypt from "bcryptjs";
 export async function PUT(request, { params }) {
   try {
     const { id } = params;
-    const { email, password, name, isEmailVerified } = await request.json();
+    const { email, password, name,role, isEmailVerified } = await request.json();
 
     // Validate ID
     const userId = parseInt(id);
@@ -26,6 +26,7 @@ export async function PUT(request, { params }) {
     if (email) updateData.email = email;
     if (password) updateData.password = await bcrypt.hash(password, 10);
     if (name !== undefined) updateData.name = name;
+    if (role !== undefined) updateData.role = role;
     if (isEmailVerified !== undefined) updateData.isEmailVerified = isEmailVerified;
 
     // Update user
@@ -36,6 +37,7 @@ export async function PUT(request, { params }) {
         id: true,
         email: true,
         name: true,
+        role: true,
         isEmailVerified: true,
         createdAt: true,
         updatedAt: true,

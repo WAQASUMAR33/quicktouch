@@ -4,22 +4,22 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Sidebar from '../components/sidebar';
 import Navbar from '../components/navbar';
+import { AuthProvider, useAuth } from '../context/AuthContext';
 
-export default function DashboardLayout({ children }) {
+function AuthenticatedLayout({ isSidebarOpen, toggleSidebar, children }) {
   const router = useRouter();
+  const { role, logout } = useAuth();
   const [isLoading, setIsLoading] = useState(true);
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
   useEffect(() => {
     const token = localStorage.getItem('token');
     if (!token) {
       console.log('No token found, redirecting to login');
-      router.push('/login');
+      router.push('/pages/login');
       setIsLoading(false);
       return;
     }
 
-    // Verify token
     async function verifyToken() {
       try {
         const response = await fetch('/api/auth/verify', {
@@ -35,18 +35,24 @@ export default function DashboardLayout({ children }) {
       } catch (err) {
         console.error('Token verification error:', err);
         localStorage.removeItem('token');
-        router.push('/login');
+        localStorage.removeItem('user');
+        localStorage.removeItem('role');
+        logout();
+        router.push('/pages/login');
       } finally {
         setIsLoading(false);
       }
     }
 
     verifyToken();
-  }, [router]);
+  }, [router, logout]);
 
-  const toggleSidebar = () => {
-    setIsSidebarOpen((prev) => !prev);
-  };
+  useEffect(() => {
+    if (!isLoading && !['Admin', 'SaleMan'].includes(role)) {
+      console.log('Invalid role, redirecting to login');
+      router.push('/pages/login');
+    }
+  }, [role, isLoading, router]);
 
   if (isLoading) {
     return (
@@ -58,7 +64,6 @@ export default function DashboardLayout({ children }) {
 
   return (
     <div className="flex h-screen overflow-hidden">
-      {/* Sidebar on the Left */}
       <div
         className={`${
           isSidebarOpen ? 'w-64' : 'w-16'
@@ -69,7 +74,6 @@ export default function DashboardLayout({ children }) {
         <Sidebar isOpen={isSidebarOpen} toggleSidebar={toggleSidebar} />
       </div>
 
-      {/* Mobile Sidebar Overlay */}
       {isSidebarOpen && (
         <div
           className="fixed inset-0 bg-black bg-opacity-50 z-10 md:hidden"
@@ -85,7 +89,6 @@ export default function DashboardLayout({ children }) {
         <Sidebar isOpen={isSidebarOpen} toggleSidebar={toggleSidebar} />
       </div>
 
-      {/* Main Content on the Right */}
       <div className="flex-1 flex flex-col overflow-hidden">
         <Navbar toggleSidebar={toggleSidebar} isSidebarOpen={isSidebarOpen} />
         <main
@@ -97,5 +100,21 @@ export default function DashboardLayout({ children }) {
         </main>
       </div>
     </div>
+  );
+}
+
+export default function DashboardLayout({ children }) {
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+
+  const toggleSidebar = () => {
+    setIsSidebarOpen((prev) => !prev);
+  };
+
+  return (
+    <AuthProvider>
+      <AuthenticatedLayout isSidebarOpen={isSidebarOpen} toggleSidebar={toggleSidebar}>
+        {children}
+      </AuthenticatedLayout>
+    </AuthProvider>
   );
 }

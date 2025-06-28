@@ -13,6 +13,7 @@ export default function UserManagementPage() {
     email: '',
     name: '',
     password: '',
+    role: '',
     isEmailVerified: false,
   });
   const [currentPage, setCurrentPage] = useState(1);
@@ -62,6 +63,7 @@ export default function UserManagementPage() {
     setFormData({
       email: user?.email || '',
       name: user?.name || '',
+      role: user?.role || '',
       password: '',
       isEmailVerified: user?.isEmailVerified || false,
     });
@@ -77,6 +79,10 @@ export default function UserManagementPage() {
         router.push('/login');
         return;
       }
+      // Validate role
+      if (!['Admin', 'SaleMan'].includes(formData.role)) {
+        throw new Error('Please select a valid role (Admin or SaleMan)');
+      }
       const method = selectedUser ? 'PUT' : 'POST';
       const url = selectedUser ? `/api/users/${selectedUser.id}` : '/api/users';
       const response = await fetch(url, {
@@ -88,6 +94,7 @@ export default function UserManagementPage() {
         body: JSON.stringify({
           email: formData.email,
           name: formData.name,
+          role: formData.role,
           password: formData.password || undefined, // Avoid sending empty password on update
           isEmailVerified: formData.isEmailVerified,
         }),
@@ -173,6 +180,9 @@ export default function UserManagementPage() {
                 Name
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Role
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Email Verified
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -191,6 +201,9 @@ export default function UserManagementPage() {
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                   {user.name || '-'}
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                  {user.role || '-'}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                   {user.isEmailVerified ? 'Yes' : 'No'}
@@ -274,6 +287,20 @@ export default function UserManagementPage() {
                   required={!selectedUser}
                 />
               </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Role</label>
+                <select
+                  name="role"
+                  value={formData.role}
+                  onChange={handleChange}
+                  className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                  required
+                >
+                  <option value="">Select Role</option>
+                  <option value="Admin">Admin</option>
+                  <option value="SaleMan">SaleMan</option>
+                </select>
+              </div>
               <div className="flex items-center">
                 <input
                   type="checkbox"
@@ -296,8 +323,7 @@ export default function UserManagementPage() {
                 </button>
                 <button
                   type="submit"
-                  className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition duration-200"
-                >
+                  className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition duration-200">
                   Save
                 </button>
               </div>

@@ -9,13 +9,11 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [apiResponse, setApiResponse] = useState(null);
   const router = useRouter();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
-    setApiResponse(null);
     setIsLoading(true);
 
     if (!email || !password) {
@@ -46,14 +44,24 @@ export default function LoginPage() {
         throw new Error(data.error || 'Login failed');
       }
 
-      setApiResponse(data);
       localStorage.setItem('token', data.token);
+      localStorage.setItem('user', JSON.stringify(data.user));
+      localStorage.setItem('role', data.user.role || '');
+
       console.log('Token stored:', data.token);
+      console.log('User stored:', data.user);
+      console.log('Role stored:', data.user.role);
 
       if (data.message === 'Login successful') {
-        console.log('Initiating redirect to /dashboard in 2 seconds');
+        console.log('Initiating redirect in 2 seconds');
         setTimeout(async () => {
-          await router.push('/pages/dashboard');
+          if (data.user.role === 'Admin') {
+            await router.push('/pages/users_management');
+          } else if (data.user.role === 'SaleMan') {
+            await router.push('/pages/dealer_management');
+          } else {
+            await router.push('/pages/dashboard');
+          }
           console.log('Redirect completed');
         }, 2000);
       } else {
@@ -87,8 +95,6 @@ export default function LoginPage() {
               {error}
             </div>
           )}
-
-        
 
           <form onSubmit={handleSubmit} className="space-y-6">
             <div>

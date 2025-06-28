@@ -18,7 +18,7 @@ const transporter = nodemailer.createTransport({
 // POST: Create a new user (signup with email verification)
 export async function POST(request) {
   try {
-    const { email, password, name } = await request.json();
+    const { email, password, name ,role } = await request.json();
 
     // Validate input
     if (!email || !password) {
@@ -49,6 +49,7 @@ export async function POST(request) {
         email,
         password: hashedPassword,
         name,
+        role,
         verificationToken,
       },
     });

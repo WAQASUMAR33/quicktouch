@@ -16,6 +16,8 @@ export default function DealersManagementPage() {
     dealerBalance: 0.0,
     dealerCity: '',
     dealerRoute: '',
+    dealerCnic: '',
+    dealerPhone: '',
   });
   const [filterData, setFilterData] = useState({
     dealerName: '',
@@ -101,6 +103,8 @@ export default function DealersManagementPage() {
       dealerBalance: dealer?.dealer_balance || 0.0,
       dealerCity: dealer?.dealer_city || '',
       dealerRoute: dealer?.dealer_route || '',
+      dealerCnic: dealer?.dealer_cnic || '',
+      dealerPhone: dealer?.dealer_phone || '',
     });
     setIsPopupOpen(true);
   };
@@ -113,6 +117,13 @@ export default function DealersManagementPage() {
       if (!token) {
         router.push('/login');
         return;
+      }
+      // Validate CNIC and Phone
+      if (formData.dealerCnic && !/^\d{13}$/.test(formData.dealerCnic)) {
+        throw new Error('CNIC must be a 13-digit number');
+      }
+      if (formData.dealerPhone && !/^\+?\d{10,12}$/.test(formData.dealerPhone)) {
+        throw new Error('Phone number must be 10-12 digits, optionally starting with +');
       }
       const method = selectedDealer ? 'PUT' : 'POST';
       const url = selectedDealer
@@ -130,6 +141,8 @@ export default function DealersManagementPage() {
           dealer_balance: formData.dealerBalance,
           dealer_city: formData.dealerCity,
           dealer_route: formData.dealerRoute,
+          dealer_cnic: formData.dealerCnic,
+          dealer_phone: formData.dealerPhone,
         }),
       });
       if (!response.ok) throw new Error(`Failed to ${selectedDealer ? 'update' : 'add'} dealer`);
@@ -231,9 +244,11 @@ export default function DealersManagementPage() {
                 <th>ID</th>
                 <th>Name</th>
                 <th>Address</th>
-                <th>Balance</th>
                 <th>City</th>
                 <th>Route</th>
+                <th>CNIC</th>
+                <th>Phone</th>
+                <th>Balance</th>
               </tr>
             </thead>
             <tbody>
@@ -244,9 +259,11 @@ export default function DealersManagementPage() {
                       <td>${dealer.dealer_id}</td>
                       <td>${dealer.dealer_name}</td>
                       <td>${dealer.dealer_address}</td>
-                      <td>${dealer.dealer_balance.toFixed(2)}</td>
                       <td>${dealer.dealer_city}</td>
                       <td>${dealer.dealer_route}</td>
+                      <td>${dealer.dealer_cnic || 'N/A'}</td>
+                      <td>${dealer.dealer_phone || 'N/A'}</td>
+                      <td>${dealer.dealer_balance.toFixed(2)}</td>
                     </tr>
                   `
                 )
@@ -368,6 +385,12 @@ export default function DealersManagementPage() {
                 Route
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                CNIC
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Phone
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Actions
               </th>
             </tr>
@@ -399,6 +422,12 @@ export default function DealersManagementPage() {
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                   {dealer.dealer_route}
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                  {dealer.dealer_cnic || 'N/A'}
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                  {dealer.dealer_phone || 'N/A'}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                   <button
@@ -446,60 +475,88 @@ export default function DealersManagementPage() {
               {selectedDealer ? 'Edit Dealer' : 'Add New Dealer'}
             </h2>
             <form onSubmit={handleSave} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Name</label>
-                <input
-                  type="text"
-                  name="dealerName"
-                  value={formData.dealerName}
-                  onChange={handleChange}
-                  className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-                  required
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Address</label>
-                <input
-                  type="text"
-                  name="dealerAddress"
-                  value={formData.dealerAddress}
-                  onChange={handleChange}
-                  className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-                  required
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Balance</label>
-                <input
-                  type="number"
-                  name="dealerBalance"
-                  value={formData.dealerBalance}
-                  onChange={handleChange}
-                  step="0.01"
-                  className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700">City</label>
-                <input
-                  type="text"
-                  name="dealerCity"
-                  value={formData.dealerCity}
-                  onChange={handleChange}
-                  className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-                  required
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Route</label>
-                <input
-                  type="text"
-                  name="dealerRoute"
-                  value={formData.dealerRoute}
-                  onChange={handleChange}
-                  className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-                  required
-                />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Name</label>
+                    <input
+                      type="text"
+                      name="dealerName"
+                      value={formData.dealerName}
+                      onChange={handleChange}
+                      className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Address</label>
+                    <input
+                      type="text"
+                      name="dealerAddress"
+                      value={formData.dealerAddress}
+                      onChange={handleChange}
+                      className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Balance</label>
+                    <input
+                      type="number"
+                      name="dealerBalance"
+                      value={formData.dealerBalance}
+                      onChange={handleChange}
+                      step="0.01"
+                      className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">City</label>
+                    <input
+                      type="text"
+                      name="dealerCity"
+                      value={formData.dealerCity}
+                      onChange={handleChange}
+                      className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                      required
+                    />
+                  </div>
+                </div>
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Route</label>
+                    <input
+                      type="text"
+                      name="dealerRoute"
+                      value={formData.dealerRoute}
+                      onChange={handleChange}
+                      className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">CNIC</label>
+                    <input
+                      type="text"
+                      name="dealerCnic"
+                      value={formData.dealerCnic}
+                      onChange={handleChange}
+                      className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                      placeholder="1234567890123"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Phone</label>
+                    <input
+                      type="text"
+                      name="dealerPhone"
+                      value={formData.dealerPhone}
+                      onChange={handleChange}
+                      className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                      placeholder="+923001234567"
+                    />
+                  </div>
+                </div>
               </div>
               <div className="flex justify-end space-x-3">
                 <button
