@@ -56,9 +56,9 @@ export default function LoginPage() {
         console.log('Initiating redirect in 2 seconds');
         setTimeout(async () => {
           if (data.user.role === 'Admin') {
-            await router.push('/pages/users_management');
+            await router.push('/pages/dashboard');
           } else if (data.user.role === 'SaleMan') {
-            await router.push('/pages/dealer_management');
+            await router.push('/pages/dashboard');
           } else {
             await router.push('/pages/dashboard');
           }
