@@ -35,6 +35,7 @@ export async function POST(request) {
       "pre_balance",
       "payment",
       "balance",
+      "created_at",
     ];
     const missingSaleFields = requiredSaleFields.filter((field) => data[field] === undefined);
     if (missingSaleFields.length > 0) {
@@ -44,10 +45,16 @@ export async function POST(request) {
       );
     }
 
-    // Validate date if provided
+    // Validate date and created_at
     if (data.date && isNaN(Date.parse(data.date))) {
       return NextResponse.json(
         { error: "Invalid date format" },
+        { status: 400 }
+      );
+    }
+    if (isNaN(Date.parse(data.created_at))) {
+      return NextResponse.json(
+        { error: "Invalid created_at format" },
         { status: 400 }
       );
     }
@@ -74,6 +81,7 @@ export async function POST(request) {
       "pre_balance",
       "payment",
       "balance",
+      "created_at",
     ];
     for (const [index, detail] of data.saleDetails.entries()) {
       const missingFields = requiredSaleDetailsFields.filter(
@@ -82,6 +90,12 @@ export async function POST(request) {
       if (missingFields.length > 0) {
         return NextResponse.json(
           { error: `Missing required fields in saleDetails[${index}]: ${missingFields.join(", ")}` },
+          { status: 400 }
+        );
+      }
+      if (isNaN(Date.parse(detail.created_at))) {
+        return NextResponse.json(
+          { error: `Invalid created_at format in saleDetails[${index}]` },
           { status: 400 }
         );
       }
@@ -98,7 +112,7 @@ export async function POST(request) {
       total_amount: parseFloat(data.total_amount),
       total_freight_amount: parseFloat(data.total_freight_amount),
       net_total: parseFloat(data.net_total),
-      total_sale_amount:  parseFloat(data.total_sale_amount),
+      total_sale_amount: parseFloat(data.total_sale_amount),
       pre_balance: parseFloat(data.pre_balance),
       payment: parseFloat(data.payment),
       balance: parseFloat(data.balance),
@@ -218,7 +232,7 @@ export async function POST(request) {
     console.log('Starting transaction');
     const result = await prisma.$transaction(
       async (tx) => {
-        // Create sale
+        // Create sale with manual created_at
         console.log('Creating sale');
         const sale = await tx.sale.create({
           data: {
@@ -231,19 +245,20 @@ export async function POST(request) {
             total_amount: saleNumericFields.total_amount,
             total_freight_amount: saleNumericFields.total_freight_amount,
             net_total: saleNumericFields.net_total,
+            total_sale_amount: saleNumericFields.total_sale_amount,
             vehicle_no: data.vehicle_no,
-            total_sale_amount : saleNumericFields.total_sale_amount,
             pre_balance: saleNumericFields.pre_balance,
             payment: saleNumericFields.payment,
             balance: saleNumericFields.balance,
-            created_at: new Date(), // Explicitly set created_at
+            date: data.date,
+            created_at: new Date(data.created_at),
           },
         });
         console.log(`Sale created in ${Date.now() - startTime}ms`, { sale_id: sale.sale_id });
 
         // Update supplier balance and create SupTrnx
         console.log('Updating supplier');
-        const newSupplierBalance = supplier.sup_balance + saleNumericFields.net_total;
+        const newSupplierBalance = supplier.sup_balance + saleNumericFields.net_total - saleNumericFields.payment;
         await tx.supplier.update({
           where: { sup_id: saleNumericFields.sup_id },
           data: { sup_balance: newSupplierBalance },
@@ -253,18 +268,20 @@ export async function POST(request) {
             sup_id: saleNumericFields.sup_id,
             pre_balance: supplier.sup_balance,
             amount_out: saleNumericFields.net_total,
+            payment: saleNumericFields.payment,
             balance: newSupplierBalance,
             details: `Sale ID: ${sale.sale_id}`,
+            created_at: new Date(data.created_at),
           },
         });
         console.log(`Supplier updated in ${Date.now() - startTime}ms`);
 
-        // Create sale details using createMany
+        // Create sale details with manual created_at
         console.log('Creating saleDetails');
         const saleDetailsData = data.saleDetails.map((detail, index) => {
           const numericFields = saleDetailsNumericFields[index];
           return {
-            sales_id: sale.sale_id,
+            sale_id: sale.sale_id,
             v_no: detail.v_no,
             p_id: numericFields.p_id,
             d_id: numericFields.d_id,
@@ -277,6 +294,7 @@ export async function POST(request) {
             pre_balance: numericFields.pre_balance,
             payment: numericFields.payment,
             balance: numericFields.balance,
+            created_at: new Date(detail.created_at),
           };
         });
         const saleDetailsResult = await tx.saleDetails.createMany({
@@ -291,7 +309,7 @@ export async function POST(request) {
         for (const [index, detail] of data.saleDetails.entries()) {
           const numericFields = saleDetailsNumericFields[index];
           const dealer = dealers.find((d) => d.dealer_id === numericFields.d_id);
-          const newDealerBalance = dealer.dealer_balance + numericFields.net_total_amount;
+          const newDealerBalance = dealer.dealer_balance + numericFields.net_total_amount - numericFields.payment;
           dealerUpdates.push(
             tx.dealer.update({
               where: { dealer_id: numericFields.d_id },
@@ -302,8 +320,10 @@ export async function POST(request) {
             d_id: numericFields.d_id,
             pre_balance: dealer.dealer_balance,
             amount_out: numericFields.net_total_amount,
+            payment: numericFields.payment,
             balance: newDealerBalance,
             details: `Sale Details ID: ${sale.sale_id}-${index + 1}`,
+            created_at: new Date(detail.created_at),
           });
         }
         await Promise.all(dealerUpdates);
@@ -342,7 +362,6 @@ export async function POST(request) {
   }
 }
 
-
 // GET: Fetch all sales
 export async function GET() {
   try {
@@ -375,6 +394,7 @@ export async function GET() {
         pre_balance: true,
         payment: true,
         balance: true,
+        date: true,
         created_at: true,
         updated_at: true,
         saleDetails: {
