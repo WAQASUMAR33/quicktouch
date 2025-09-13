@@ -1,6 +1,5 @@
 generator client {
   provider = "prisma-client-js"
-  // Removed output = "../generated/prisma" to use default location (node_modules/@prisma/client)
 }
 
 datasource db {
@@ -8,137 +7,179 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model Academy {
+  id           String         @id
+  name         String
+  location     String
+  adminIds     String         @db.LongText
+  createdAt    DateTime       @default(now())
+  Event        Event[]
+  Match        Match[]
+  Player       Player[]
+  TrainingPlan TrainingPlan[]
+  User         User[]
+}
+
+model Attendance {
+  id        String   @id
+  playerId  String
+  eventId   String?
+  matchId   String?
+  status    String
+  date      DateTime
+  createdAt DateTime @default(now())
+  Event     Event?   @relation(fields: [eventId], references: [id])
+  Match     Match?   @relation(fields: [matchId], references: [id])
+  Player    Player   @relation(fields: [playerId], references: [id])
+
+  @@index([eventId], map: "Attendance_eventId_fkey")
+  @@index([matchId], map: "Attendance_matchId_fkey")
+  @@index([playerId], map: "Attendance_playerId_fkey")
+}
+
+model Event {
+  id          String       @id
+  academyId   String
+  title       String
+  description String
+  date        DateTime
+  location    String
+  type        String
+  createdAt   DateTime     @default(now())
+  Attendance  Attendance[]
+  Academy     Academy      @relation(fields: [academyId], references: [id])
+
+  @@index([academyId], map: "Event_academyId_fkey")
+}
+
+model Feedback {
+  id        String   @id
+  playerId  String
+  coachId   String
+  rating    Int
+  notes     String
+  date      DateTime
+  createdAt DateTime @default(now())
+  User      User     @relation(fields: [coachId], references: [id])
+  Player    Player   @relation(fields: [playerId], references: [id])
+
+  @@index([coachId], map: "Feedback_coachId_fkey")
+  @@index([playerId], map: "Feedback_playerId_fkey")
+}
+
+model Match {
+  id          String        @id
+  academyId   String
+  title       String
+  date        DateTime
+  location    String
+  type        String
+  createdAt   DateTime      @default(now())
+  Attendance  Attendance[]
+  Academy     Academy       @relation(fields: [academyId], references: [id])
+  PlayerStats PlayerStats[]
+
+  @@index([academyId], map: "Match_academyId_fkey")
+}
+
+model Notification {
+  id        String   @id
+  userId    String
+  type      String
+  title     String
+  message   String
+  relatedId String?
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+  User      User     @relation(fields: [userId], references: [id])
+
+  @@index([userId], map: "Notification_userId_fkey")
+}
+
+model Player {
+  id             String          @id
+  userId         String          @unique
+  fullName       String
+  age            Int
+  height         Float
+  position       String
+  highlightReels String          @db.LongText
+  academyId      String
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime
+  Attendance     Attendance[]
+  Feedback       Feedback[]
+  Academy        Academy         @relation(fields: [academyId], references: [id])
+  PlayerStats    PlayerStats[]
+  ScoutFavorite  ScoutFavorite[]
+  User           User?
+
+  @@index([academyId], map: "Player_academyId_fkey")
+}
+
+model PlayerStats {
+  id            String   @id
+  playerId      String
+  matchId       String
+  goals         Int      @default(0)
+  assists       Int      @default(0)
+  minutesPlayed Int      @default(0)
+  date          DateTime
+  createdAt     DateTime @default(now())
+  Match         Match    @relation(fields: [matchId], references: [id])
+  Player        Player   @relation(fields: [playerId], references: [id])
+
+  @@index([matchId], map: "PlayerStats_matchId_fkey")
+  @@index([playerId], map: "PlayerStats_playerId_fkey")
+}
+
+model ScoutFavorite {
+  id        String   @id
+  scoutId   String
+  playerId  String
+  createdAt DateTime @default(now())
+  Player    Player   @relation(fields: [playerId], references: [id])
+  User      User     @relation(fields: [scoutId], references: [id])
+
+  @@index([playerId], map: "ScoutFavorite_playerId_fkey")
+  @@index([scoutId], map: "ScoutFavorite_scoutId_fkey")
+}
+
+model TrainingPlan {
+  id          String   @id
+  coachId     String
+  title       String
+  description String
+  drills      String   @db.LongText
+  date        DateTime
+  academyId   String
+  createdAt   DateTime @default(now())
+  Academy     Academy  @relation(fields: [academyId], references: [id])
+  User        User     @relation(fields: [coachId], references: [id])
+
+  @@index([academyId], map: "TrainingPlan_academyId_fkey")
+  @@index([coachId], map: "TrainingPlan_coachId_fkey")
+}
+
 model User {
-  id              Int      @id @default(autoincrement())
-  email           String   @unique
-  password        String
-  name            String?
-  role            String?
-  isEmailVerified Boolean  @default(false)
+  id                String          @id
+  role              String          @default("player")
+  fullName          String
+  email             String          @unique
+  password          String?
+  phone             String?
+  createdAt         DateTime        @default(now())
+  profilePhoto      String?
+  playerId          String?         @unique
+  academyId         String
+  isEmailVerified   Boolean         @default(false)
   verificationToken String?
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-}
+  Feedback          Feedback[]
+  Notification      Notification[]
+  ScoutFavorite     ScoutFavorite[]
+  TrainingPlan      TrainingPlan[]
+  Academy           Academy         @relation(fields: [academyId], references: [id])
+  Player            Player?         @relation(fields: [playerId], references: [id])
 
-model Supplier {
-  sup_id      Int       @id @default(autoincrement())
-  sup_name    String
-  sup_address String
-  sup_phoneNo String
-  sup_taxNo   String    @unique
-  sup_balance Float     @default(0.0)
-  created_at  DateTime  @default(now())
-  updated_at  DateTime  @updatedAt
-  supTrnx     SupTrnx[]
-  sale        Sale[]
-  @@index([sup_taxNo])
-}
-
-model Dealer {
-  dealer_id      Int          @id @default(autoincrement())
-  dealer_name    String
-  dealer_address String
-  dealer_balance Float        @default(0.0)
-  dealer_city    String
-  dealer_route   String
-  dealer_phone   String?
-  dealer_cnic    String?
-  created_at     DateTime     @default(now())
-  updated_at     DateTime     @updatedAt
-  saleDetails    SaleDetails[]
-  dealerTrnx     DealerTrnx[]
-}
-
-model Tax {
-  tax_id     Int      @id @default(autoincrement())
-  tax_name   String
-  tax_per    Float
-  created_at DateTime @default(now())
-  updated_at DateTime @updatedAt
-}
-
-model Product {
-  p_id        Int          @id @default(autoincrement())
-  p_title     String
-  sales       Sale[]
-  saleDetails SaleDetails[]
-  created_at  DateTime     @default(now())
-  updated_at  DateTime     @updatedAt
-}
-
-model Sale {
-  sale_id        Int          @id @default(autoincrement())
-  p_id           Int
-  product        Product      @relation(fields: [p_id], references: [p_id], onDelete: Restrict)
-  sup_id           Int
-  supplier        Supplier      @relation(fields: [sup_id], references: [sup_id], onDelete: Restrict)
-  weight Float
-  no_of_bags            Int
-  amount_per_bag        Float
-  freight_per_bag       Float
-  total_amount          Float
-  total_freight_amount  Float
-  net_total      Float
-  total_sale_amount  Float @default(0)
-  vehicle_no     String
-  pre_balance    Float
-  payment        Float
-  balance        Float
-  created_at     DateTime     @default(now())
-  updated_at     DateTime     @updatedAt
-  saleDetails    SaleDetails[]
-  @@index([p_id])
-}
-
-model SaleDetails {
-  sales_details_id        Int      @id @default(autoincrement())
-  sales_id               Int
-  sale                   Sale     @relation(fields: [sales_id], references: [sale_id], onDelete: Cascade)
-  v_no                   String
-  p_id                   Int
-  product                Product  @relation(fields: [p_id], references: [p_id], onDelete: Restrict)
-  d_id                   Int
-  dealer                 Dealer   @relation(fields: [d_id], references: [dealer_id], onDelete: Restrict)
-  no_of_bags             Int
-  unit_rate              Float
-  freight_rate           Float
-  total_amount_bags      Float
-  total_amount_freight   Float
-  net_total_amount       Float
-  pre_balance            Float
-  payment                Float
-  balance                Float
-  created_at             DateTime @default(now())
-  updated_at             DateTime @updatedAt
-  @@index([sales_id])
-  @@index([p_id])
-  @@index([d_id])
-}
-
-model SupTrnx {
-  trnx_id     Int      @id @default(autoincrement())
-  sup_id      Int
-  supplier    Supplier @relation(fields: [sup_id], references: [sup_id], onDelete: Restrict)
-  pre_balance Float
-  amount_in   Float    @default(0.0)
-  amount_out  Float    @default(0.0)
-  balance     Float
-  details     String
-  created_at  DateTime @default(now())
-  updated_at  DateTime @updatedAt
-  @@index([sup_id])
-}
-
-model DealerTrnx {
-  trnx_id     Int      @id @default(autoincrement())
-  d_id        Int
-  dealer      Dealer   @relation(fields: [d_id], references: [dealer_id], onDelete: Restrict)
-  pre_balance Float
-  amount_in   Float    @default(0.0)
-  amount_out  Float    @default(0.0)
-  balance     Float
-  details     String
-  created_at  DateTime @default(now())
-  updated_at  DateTime @updatedAt
-  @@index([d_id])
+  @@index([academyId], map: "User_academyId_fkey")
 }

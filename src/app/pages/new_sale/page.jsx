@@ -25,7 +25,6 @@ export default function NewSalePage() {
     payment: 0.0,
     balance: 0.0,
     date: new Date().toISOString().split('T')[0],
-    created_at: new Date().toISOString().slice(0, 16), // Default to current datetime (PKT)
   });
   const [saleDetails, setSaleDetails] = useState([
     {
@@ -41,7 +40,6 @@ export default function NewSalePage() {
       preBalance: 0.0,
       payment: 0.0,
       balance: 0.0,
-      created_at: new Date().toISOString().slice(0, 16), // Default to current datetime (PKT)
     },
   ]);
   const [isAddingDealer, setIsAddingDealer] = useState(false);
@@ -78,6 +76,7 @@ export default function NewSalePage() {
         const suppliersData = await suppliersResp.json();
         const dealersData = await dealersResp.json();
         const productsData = await productsResp.json();
+        console.log('Fetched suppliers:', JSON.stringify(suppliersData, null, 2));
         setSuppliers(Array.isArray(suppliersData) ? suppliersData : []);
         setDealers(Array.isArray(dealersData) ? dealersData : []);
         setProducts(Array.isArray(productsData) ? productsData : []);
@@ -117,42 +116,73 @@ export default function NewSalePage() {
 
   // Handle sale form changes
   const handleSaleChange = (e) => {
-    const { name, value } = e.target;
-    setSaleForm((prev) => {
-      const updated = { ...prev };
-      if (['weight', 'unitRate', 'freightPerBag', 'payment'].includes(name)) {
-        updated[name] = parseFloat(value) || 0.0;
+  const { name, value } = e.target;
+  setSaleForm((prev) => {
+    const updated = { ...prev };
+    if (['weight', 'unitRate', 'freightPerBag', 'payment'].includes(name)) {
+      updated[name] = parseFloat(value) || 0.0;
+    } else if (name === 'created_at') {
+      // Set date to ISO-8601 and created_at to raw datetime-local value
+      try {
+        const date = new Date(value);
+        if (isNaN(date.getTime())) {
+          throw new Error('Invalid date');
+        }
+        // Set date to ISO-8601 with PKT (+05:00)
+        const isoDate = new Date(`${value}:00.000Z`).toISOString().replace('Z', '+05:00');
+        updated.date = isoDate; // e.g., "2025-07-18T03:27:00.000+05:00"
+        updated.created_at = value; // e.g., "2025-07-18T03:27"
+        // Sync created_at to saleDetails
+        setSaleDetails((prevDetails) =>
+          prevDetails.map((detail) => ({
+            ...detail,
+            created_at: value,
+          }))
+        );
+      } catch (err) {
+        updated.date = prev.date; // Fallback to previous date
+        updated.created_at = prev.created_at; // Fallback to previous created_at
+        console.error('Invalid datetime input:', value, err);
+      }
+    } else {
+      updated[name] = value;
+    }
+
+    // Handle weight change
+    if (name === 'weight') {
+      updated.noOfBags = Math.round(updated.weight * 20);
+    }
+
+    // Calculate totals
+    updated.totalAmount = updated.unitRate * updated.noOfBags;
+    updated.totalFreightAmount = updated.freightPerBag * updated.noOfBags;
+    updated.netTotal = updated.totalAmount - updated.totalFreightAmount;
+
+    // Handle supplier change
+    if (name === 'supId') {
+      console.log('Selected supId:', value);
+      if (!value || isNaN(parseInt(value))) {
+        updated.preBalance = 0.0;
+        updated.balance = updated.netTotal - updated.payment;
       } else {
-        updated[name] = value;
-      }
-
-      // Handle weight change
-      if (name === 'weight') {
-        updated.noOfBags = Math.round(updated.weight * 20);
-      }
-
-      // Calculate totals
-      updated.totalAmount = updated.unitRate * updated.noOfBags;
-      updated.totalFreightAmount = updated.freightPerBag * updated.noOfBags;
-      updated.netTotal = updated.totalAmount - updated.totalFreightAmount;
-
-      // Handle supplier change
-      if (name === 'supId') {
         const supplier = Array.isArray(suppliers)
           ? suppliers.find((sup) => sup.sup_id === parseInt(value))
           : null;
+        console.log('Found supplier:', JSON.stringify(supplier, null, 2));
         updated.preBalance = supplier ? supplier.sup_balance || 0.0 : 0.0;
         updated.balance = updated.preBalance + updated.netTotal - updated.payment;
       }
+    }
 
-      // Update balance for fields affecting netTotal
-      if (['unitRate', 'freightPerBag', 'weight', 'payment'].includes(name)) {
-        updated.balance = updated.preBalance + updated.netTotal - updated.payment;
-      }
+    // Update balance for fields affecting netTotal
+    if (['unitRate', 'freightPerBag', 'weight', 'payment'].includes(name)) {
+      updated.balance = updated.preBalance + updated.netTotal - updated.payment;
+    }
 
-      return updated;
-    });
-  };
+    console.log('Updated saleForm:', JSON.stringify(updated, null, 2));
+    return updated;
+  });
+};
 
   // Handle sale details changes
   const handleDetailChange = (index, e) => {
@@ -212,7 +242,6 @@ export default function NewSalePage() {
           preBalance: 0.0,
           payment: 0.0,
           balance: 0.0,
-          created_at: new Date().toISOString().slice(0, 16),
         },
       ];
       setTimeout(() => setIsAddingDealer(false), 300);
@@ -241,7 +270,6 @@ export default function NewSalePage() {
               preBalance: 0.0,
               payment: 0.0,
               balance: 0.0,
-              created_at: new Date().toISOString().slice(0, 16),
             },
           ]
         : updated;
@@ -266,10 +294,7 @@ export default function NewSalePage() {
       return 'Vehicle No is required and must be alphanumeric';
     }
     if (!saleForm.date) {
-      return 'Business Date is required';
-    }
-    if (!saleForm.created_at || isNaN(Date.parse(saleForm.created_at))) {
-      return 'Created At date and time are required';
+      return 'Date is required';
     }
     if (saleForm.weight <= 0 || saleForm.noOfBags <= 0) {
       return 'Weight and Number of Bags must be greater than 0';
@@ -299,9 +324,6 @@ export default function NewSalePage() {
       }
       if (!cleanString(detail.vNo) && !cleanString(saleForm.vehicleNo)) {
         return `Vehicle No is required for dealer row ${index + 1} or sale`;
-      }
-      if (!detail.created_at || isNaN(Date.parse(detail.created_at))) {
-        return `Created At date and time are required for dealer row ${index + 1}`;
       }
       if (detail.noOfBags <= 0) {
         return `Number of Bags in dealer row ${index + 1} must be greater than 0`;
@@ -366,7 +388,6 @@ export default function NewSalePage() {
         payment: saleForm.payment,
         balance: saleForm.balance,
         date: saleForm.date,
-        created_at: new Date(saleForm.created_at).toISOString(),
         saleDetails: saleDetails.map((detail) => ({
           v_no: cleanString(detail.vNo) || cleanString(saleForm.vehicleNo),
           p_id: parseInt(saleForm.pId),
@@ -380,9 +401,10 @@ export default function NewSalePage() {
           pre_balance: detail.preBalance,
           payment: detail.payment,
           balance: detail.balance,
-          created_at: new Date(detail.created_at).toISOString(),
         })),
       };
+
+      console.log('Submitting payload:', JSON.stringify(payload, null, 2));
 
       const response = await fetch('/api/sale', {
         method: 'POST',
@@ -426,14 +448,14 @@ export default function NewSalePage() {
           {/* Sale Form - Upper Section */}
           <div>
             <h2 className="text-xl font-semibold text-gray-800 mb-4">Sale Details</h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700">Product</label>
                 <select
                   name="pId"
                   value={saleForm.pId}
                   onChange={handleSaleChange}
-                  className="mt-1 w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                  className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
                   required
                 >
                   <option value="">Select Product</option>
@@ -450,7 +472,7 @@ export default function NewSalePage() {
                   name="supId"
                   value={saleForm.supId}
                   onChange={handleSaleChange}
-                  className="mt-1 w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                  className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
                   required
                 >
                   <option value="">Select Supplier</option>
@@ -468,29 +490,18 @@ export default function NewSalePage() {
                   name="vehicleNo"
                   value={saleForm.vehicleNo}
                   onChange={handleSaleChange}
-                  className="mt-1 w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                  className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
                   required
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700">Business Date</label>
-                <input
-                  type="date"
-                  name="date"
-                  value={saleForm.date}
-                  onChange={handleSaleChange}
-                  className="mt-1 w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-                  required
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Created At</label>
+                <label className="block text-sm font-medium text-gray-700">Date and Time</label>
                 <input
                   type="datetime-local"
                   name="created_at"
-                  value={saleForm.created_at}
+                  value={saleForm.created_at} // Format for datetime-local
                   onChange={handleSaleChange}
-                  className="mt-1 w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                  className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
                   required
                 />
               </div>
@@ -505,7 +516,7 @@ export default function NewSalePage() {
                   onChange={handleSaleChange}
                   step="0.01"
                   min="0.01"
-                  className="mt-1 w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                  className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
                   required
                 />
               </div>
@@ -516,7 +527,7 @@ export default function NewSalePage() {
                   name="noOfBags"
                   value={saleForm.noOfBags}
                   readOnly
-                  className="mt-1 w-full px-3 py-2 text-sm border border-gray-300 rounded-md bg-gray-100"
+                  className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100"
                 />
               </div>
               <div>
@@ -528,7 +539,7 @@ export default function NewSalePage() {
                   onChange={handleSaleChange}
                   step="0.01"
                   min="0.01"
-                  className="mt-1 w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                  className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
                   required
                 />
               </div>
@@ -541,7 +552,7 @@ export default function NewSalePage() {
                   onChange={handleSaleChange}
                   step="0.01"
                   min="0"
-                  className="mt-1 w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                  className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
                   required
                 />
               </div>
@@ -554,7 +565,7 @@ export default function NewSalePage() {
                   name="totalAmount"
                   value={saleForm.totalAmount}
                   readOnly
-                  className="mt-1 w-full px-3 py-2 text-sm border border-gray-300 rounded-md bg-gray-100"
+                  className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100"
                 />
               </div>
               <div>
@@ -564,7 +575,7 @@ export default function NewSalePage() {
                   name="totalFreightAmount"
                   value={saleForm.totalFreightAmount}
                   readOnly
-                  className="mt-1 w-full px-3 py-2 text-sm border border-gray-300 rounded-md bg-gray-100"
+                  className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100"
                 />
               </div>
               <div>
@@ -574,7 +585,7 @@ export default function NewSalePage() {
                   name="netTotal"
                   value={saleForm.netTotal}
                   readOnly
-                  className="mt-1 w-full px-3 py-2 text-sm border border-gray-300 rounded-md bg-gray-100"
+                  className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100"
                 />
               </div>
               <div>
@@ -584,7 +595,7 @@ export default function NewSalePage() {
                   name="totalSaleAmount"
                   value={saleForm.totalSaleAmount}
                   readOnly
-                  className="mt-1 w-full px-3 py-2 text-sm border border-gray-300 rounded-md bg-gray-100"
+                  className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100"
                 />
               </div>
             </div>
@@ -596,7 +607,7 @@ export default function NewSalePage() {
                   name="preBalance"
                   value={saleForm.preBalance}
                   readOnly
-                  className="mt-1 w-full px-3 py-2 text-sm border border-gray-300 rounded-md bg-gray-100"
+                  className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100"
                 />
               </div>
               <div>
@@ -608,7 +619,7 @@ export default function NewSalePage() {
                   onChange={handleSaleChange}
                   step="0.01"
                   min="0"
-                  className="mt-1 w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                  className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
                   required
                 />
               </div>
@@ -619,173 +630,157 @@ export default function NewSalePage() {
                   name="balance"
                   value={saleForm.balance}
                   readOnly
-                  className="mt-1 w-full px-3 py-2 text-sm border border-gray-300 rounded-md bg-gray-100"
+                  className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100"
                 />
               </div>
             </div>
           </div>
 
-          {/* Dealer Details */}
+          {/* Sale Details for Dealers */}
           <div>
             <h2 className="text-xl font-semibold text-gray-800 mb-4">Dealer Details</h2>
-            <div className="overflow-x-auto">
-              {saleDetails.map((detail, index) => (
-                <div
-                  key={detail.id}
-                  className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-7 gap-4 mb-4 p-4 border border-gray-200 rounded-md"
-                >
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">Dealer</label>
-                    <select
-                      name="dealerId"
-                      value={detail.dealerId}
-                      onChange={(e) => handleDetailChange(index, e)}
-                      className="mt-1 w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-                      required
-                    >
-                      <option value="">Select Dealer</option>
-                      {dealers.map((dealer) => (
-                        <option key={dealer.dealer_id} value={dealer.dealer_id}>
-                          {dealer.dealer_name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">Vehicle No</label>
-                    <input
-                      type="text"
-                      name="vNo"
-                      value={detail.vNo}
-                      onChange={(e) => handleDetailChange(index, e)}
-                      className="mt-1 w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">No of Bags</label>
-                    <input
-                      type="number"
-                      name="noOfBags"
-                      value={detail.noOfBags}
-                      onChange={(e) => handleDetailChange(index, e)}
-                      min="1"
-                      className="mt-1 w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-                      required
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">Unit Rate per Bag</label>
-                    <input
-                      type="number"
-                      name="unitRate"
-                      value={detail.unitRate}
-                      onChange={(e) => handleDetailChange(index, e)}
-                      step="0.01"
-                      min="0.01"
-                      className="mt-1 w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-                      required
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">Freight Rate per Bag</label>
-                    <input
-                      type="number"
-                      name="freightRate"
-                      value={detail.freightRate}
-                      onChange={(e) => handleDetailChange(index, e)}
-                      step="0.01"
-                      min="0"
-                      className="mt-1 w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-                      required
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">Created At</label>
-                    <input
-                      type="datetime-local"
-                      name="created_at"
-                      value={detail.created_at}
-                      onChange={(e) => handleDetailChange(index, e)}
-                      className="mt-1 w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-                      required
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">Total Bags Amount</label>
-                    <input
-                      type="number"
-                      name="totalAmountBags"
-                      value={detail.totalAmountBags}
-                      readOnly
-                      className="mt-1 w-full px-3 py-2 text-sm border border-gray-300 rounded-md bg-gray-100"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">Total Freight Amount</label>
-                    <input
-                      type="number"
-                      name="totalAmountFreight"
-                      value={detail.totalAmountFreight}
-                      readOnly
-                      className="mt-1 w-full px-3 py-2 text-sm border border-gray-300 rounded-md bg-gray-100"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">Net Total Amount</label>
-                    <input
-                      type="number"
-                      name="netTotalAmount"
-                      value={detail.netTotalAmount}
-                      readOnly
-                      className="mt-1 w-full px-3 py-2 text-sm border border-gray-300 rounded-md bg-gray-100"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">Previous Balance</label>
-                    <input
-                      type="number"
-                      name="preBalance"
-                      value={detail.preBalance}
-                      readOnly
-                      className="mt-1 w-full px-3 py-2 text-sm border border-gray-300 rounded-md bg-gray-100"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">Payment</label>
-                    <input
-                      type="number"
-                      name="payment"
-                      value={detail.payment}
-                      onChange={(e) => handleDetailChange(index, e)}
-                      step="0.01"
-                      min="0"
-                      className="mt-1 w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-                      required
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">Balance</label>
-                    <input
-                      type="number"
-                      name="balance"
-                      value={detail.balance}
-                      readOnly
-                      className="mt-1 w-full px-3 py-2 text-sm border border-gray-300 rounded-md bg-gray-100"
-                    />
-                  </div>
-                  {index > 0 && (
-                    <button
-                      type="button"
-                      onClick={() => removeDealerRow(index)}
-                      className="mt-6 bg-red-500 text-white px-3 py-1 rounded-md hover:bg-red-600 transition duration-200"
-                      disabled={isRemovingDealer}
-                    >
-                      Remove
-                    </button>
-                  )}
+            {saleDetails.map((detail, index) => (
+              <div key={detail.id} className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-6 gap-4 mb-4 p-4 border border-gray-200 rounded-md">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Dealer</label>
+                  <select
+                    name="dealerId"
+                    value={detail.dealerId}
+                    onChange={(e) => handleDetailChange(index, e)}
+                    className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                    required
+                  >
+                    <option value="">Select Dealer</option>
+                    {dealers.map((dealer) => (
+                      <option key={dealer.dealer_id} value={dealer.dealer_id}>
+                        {dealer.dealer_name}
+                      </option>
+                    ))}
+                  </select>
                 </div>
-              ))}
-            </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Vehicle No</label>
+                  <input
+                    type="text"
+                    name="vNo"
+                    value={detail.vNo}
+                    onChange={(e) => handleDetailChange(index, e)}
+                    className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">No of Bags</label>
+                  <input
+                    type="number"
+                    name="noOfBags"
+                    value={detail.noOfBags}
+                    onChange={(e) => handleDetailChange(index, e)}
+                    min="1"
+                    className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Unit Rate per Bag</label>
+                  <input
+                    type="number"
+                    name="unitRate"
+                    value={detail.unitRate}
+                    onChange={(e) => handleDetailChange(index, e)}
+                    step="0.01"
+                    min="0.01"
+                    className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Freight Rate per Bag</label>
+                  <input
+                    type="number"
+                    name="freightRate"
+                    value={detail.freightRate}
+                    onChange={(e) => handleDetailChange(index, e)}
+                    step="0.01"
+                    min="0"
+                    className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Total Bags Amount</label>
+                  <input
+                    type="number"
+                    name="totalAmountBags"
+                    value={detail.totalAmountBags}
+                    readOnly
+                    className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Total Freight Amount</label>
+                  <input
+                    type="number"
+                    name="totalAmountFreight"
+                    value={detail.totalAmountFreight}
+                    readOnly
+                    className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Net Total Amount</label>
+                  <input
+                    type="number"
+                    name="netTotalAmount"
+                    value={detail.netTotalAmount}
+                    readOnly
+                    className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Previous Balance</label>
+                  <input
+                    type="number"
+                    name="preBalance"
+                    value={detail.preBalance}
+                    readOnly
+                    className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100"
+                  />
+                </div>
+                <div className=' hidden'> 
+                  <label className="block text-sm font-medium text-gray-700">Payment</label>
+                  <input
+                    type="number"
+                    name="payment"
+                    value={detail.payment}
+                    onChange={(e) => handleDetailChange(index, e)}
+                    step="0.01"
+                    min="0"
+                    className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                    required
+                  />
+                </div>
+                <div className=' hidden'> 
+                  <label className="block text-sm font-medium text-gray-700">Balance</label>
+                  <input
+                    type="number"
+                    name="balance"
+                    value={detail.balance}
+                    readOnly
+                    className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100"
+                  />
+                </div>
+                {index > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => removeDealerRow(index)}
+                    className="mt-6 bg-red-500 text-white px-3 py-1 rounded-md hover:bg-red-600 transition duration-200"
+                    disabled={isRemovingDealer}
+                  >
+                    Remove
+                  </button>
+                )}
+              </div>
+            ))}
             <button
               type="button"
               onClick={addDealerRow}

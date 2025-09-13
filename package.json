@@ -1,5 +1,5 @@
 {
-  "name": "khawja_traders",
+  "name": "quick_touch_academy",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -11,14 +11,13 @@
   },
   "dependencies": {
     "@heroicons/react": "^2.2.0",
-    "@prisma/client": "^6.9.0",
+    "@prisma/client": "^6.6.0",
     "bcryptjs": "^3.0.2",
     "date-fns": "^4.1.0",
     "jsonwebtoken": "^9.0.2",
     "lucide-react": "^0.515.0",
     "next": "15.3.3",
     "nodemailer": "^7.0.3",
-    "prisma": "^6.9.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "uuid": "^11.1.0"
@@ -28,6 +27,7 @@
     "@tailwindcss/postcss": "^4",
     "eslint": "^9",
     "eslint-config-next": "15.3.3",
+    "prisma": "^6.6.0",
     "tailwindcss": "^4"
   }
 }

@@ -72,7 +72,7 @@ export async function POST(request) {
       user: {
         id: user.id,
         email: user.email,
-        name: user.name,
+        fullName: user.fullName,
         role: user.role || '',
       },
       expiresIn,

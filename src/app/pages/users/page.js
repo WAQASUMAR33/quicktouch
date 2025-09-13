@@ -62,7 +62,7 @@ export default function UserManagementPage() {
     setSelectedUser(user);
     setFormData({
       email: user?.email || '',
-      name: user?.name || '',
+      name: user?.fullName || user?.name || '',
       role: user?.role || '',
       password: '',
       isEmailVerified: user?.isEmailVerified || false,
@@ -80,8 +80,8 @@ export default function UserManagementPage() {
         return;
       }
       // Validate role
-      if (!['Admin', 'SaleMan'].includes(formData.role)) {
-        throw new Error('Please select a valid role (Admin or SaleMan)');
+      if (!['admin', 'coach', 'player', 'scout'].includes(formData.role)) {
+        throw new Error('Please select a valid role (admin, coach, player, or scout)');
       }
       const method = selectedUser ? 'PUT' : 'POST';
       const url = selectedUser ? `/api/users/${selectedUser.id}` : '/api/users';
@@ -93,7 +93,7 @@ export default function UserManagementPage() {
         },
         body: JSON.stringify({
           email: formData.email,
-          name: formData.name,
+          fullName: formData.name,
           role: formData.role,
           password: formData.password || undefined, // Avoid sending empty password on update
           isEmailVerified: formData.isEmailVerified,
@@ -200,7 +200,7 @@ export default function UserManagementPage() {
                   {user.email}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                  {user.name || '-'}
+                  {user.fullName || user.name || '-'}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                   {user.role || '-'}
@@ -297,8 +297,10 @@ export default function UserManagementPage() {
                   required
                 >
                   <option value="">Select Role</option>
-                  <option value="Admin">Admin</option>
-                  <option value="SaleMan">SaleMan</option>
+                  <option value="admin">Admin</option>
+                  <option value="coach">Coach</option>
+                  <option value="player">Player</option>
+                  <option value="scout">Scout</option>
                 </select>
               </div>
               <div className="flex items-center">
