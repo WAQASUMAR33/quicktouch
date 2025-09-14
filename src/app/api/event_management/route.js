@@ -54,10 +54,10 @@ export async function GET(request) {
     const events = await prisma.event.findMany({
       where: whereClause,
       include: {
-        academy: {
+        Academy: {
           select: { id: true, name: true, location: true }
         },
-        attendance: {
+        Attendance: {
           select: {
             id: true,
             playerId: true,
@@ -75,10 +75,10 @@ export async function GET(request) {
     const matches = await prisma.match.findMany({
       where: whereClause,
       include: {
-        academy: {
+        Academy: {
           select: { id: true, name: true, location: true }
         },
-        attendance: {
+        Attendance: {
           select: {
             id: true,
             playerId: true,

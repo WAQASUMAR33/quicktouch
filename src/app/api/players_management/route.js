@@ -145,17 +145,17 @@ export async function GET(request) {
     const players = await prisma.player.findMany({
       where: whereClause,
       include: {
-        academy: {
+        Academy: {
           select: { id: true, name: true, location: true }
         },
-        playerStats: {
+        PlayerStats: {
           select: {
             goals: true,
             assists: true,
             minutesPlayed: true
           }
         },
-        feedback: {
+        Feedback: {
           select: {
             rating: true,
             notes: true,
