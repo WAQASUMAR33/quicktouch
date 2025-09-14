@@ -2,6 +2,7 @@
 
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import Image from 'next/image';
 import {
   ArrowLeftOnRectangleIcon,
 } from '@heroicons/react/24/outline';
@@ -68,10 +69,14 @@ export default function Sidebar({ isOpen, toggleSidebar }) {
         {isOpen && (
           <div className="text-sm">
             <div className="flex items-center space-x-2">
-              <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg flex items-center justify-center">
-                <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                </svg>
+              <div className="w-8 h-8">
+                <Image
+                  src="/quicktouch.png"
+                  alt="Quick Touch Academy"
+                  width={32}
+                  height={32}
+                  className="rounded-lg"
+                />
               </div>
               <div>
                 <p className="font-semibold text-white">Quick Touch</p>

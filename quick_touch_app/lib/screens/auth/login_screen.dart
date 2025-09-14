@@ -287,39 +287,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 ),
               ),
               
-              const SizedBox(height: 24),
-              
-              // Demo Credentials (for development)
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF2C2C2C).withOpacity(0.3),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(
-                    color: AppTheme.secondaryColor.withOpacity(0.3),
-                    width: 1,
-                  ),
-                ),
-                child: Column(
-                  children: [
-                    Text(
-                      'Demo Credentials',
-                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                        color: Colors.white70,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Email: demo@quicktouch.com\nPassword: demo123',
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: Colors.white60,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                  ],
-                ),
-              ),
             ],
           ),
         ),

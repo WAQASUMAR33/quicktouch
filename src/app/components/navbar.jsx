@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import Image from 'next/image';
 import { Menu, X, User, LogOut, Bell, Settings } from 'lucide-react';
 
 export default function Navbar({ toggleSidebar, isSidebarOpen }) {
@@ -56,7 +57,16 @@ export default function Navbar({ toggleSidebar, isSidebarOpen }) {
             >
               <Menu className="h-5 w-5 text-gray-600" />
             </button>
-            <div className="hidden md:block">
+            <div className="hidden md:flex items-center space-x-2">
+              <div className="w-8 h-8">
+                <Image
+                  src="/quicktouch.png"
+                  alt="Quick Touch Academy"
+                  width={32}
+                  height={32}
+                  className="rounded-lg"
+                />
+              </div>
               <h1 className="text-xl font-semibold text-gray-900">
                 Quick Touch Academy
               </h1>

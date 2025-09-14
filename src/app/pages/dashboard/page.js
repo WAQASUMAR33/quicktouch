@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-
+import Image from 'next/image';
 export default function DashboardPage() {
   const [user, setUser] = useState(null);
   const [stats, setStats] = useState({
@@ -120,16 +120,28 @@ export default function DashboardPage() {
       {/* Welcome Header */}
       <div className="bg-gradient-to-r from-purple-600 to-pink-600 rounded-2xl p-8 text-white">
         <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold mb-2">
-              Welcome to Quick Touch Academy
-            </h1>
-            <p className="text-purple-100 text-lg">
-              Hello, {user?.fullName || user?.email}! Ready to manage your academy?
-            </p>
-            <p className="text-purple-200 text-sm mt-1">
-              Role: <span className="font-semibold capitalize">{user?.role}</span>
-            </p>
+          <div className="flex items-center space-x-4">
+            <div className="w-16 h-16">
+              <Image
+                src="/quicktouch.png"
+                alt="Quick Touch Academy"
+                width={64}
+                height={64}
+                className="rounded-xl"
+                priority
+              />
+            </div>
+            <div>
+              <h1 className="text-3xl font-bold mb-2">
+                Welcome to Quick Touch Academy
+              </h1>
+              <p className="text-purple-100 text-lg">
+                Hello, {user?.fullName || user?.email}! Ready to manage your academy?
+              </p>
+              <p className="text-purple-200 text-sm mt-1">
+                Role: <span className="font-semibold capitalize">{user?.role}</span>
+              </p>
+            </div>
           </div>
           <div className="hidden md:block">
             <div className="w-20 h-20 bg-white/20 rounded-full flex items-center justify-center">
