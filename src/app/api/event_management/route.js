@@ -62,7 +62,7 @@ export async function GET(request) {
             id: true,
             playerId: true,
             status: true,
-            player: {
+            Player: {
               select: { fullName: true, position: true }
             }
           }
@@ -83,18 +83,18 @@ export async function GET(request) {
             id: true,
             playerId: true,
             status: true,
-            player: {
+            Player: {
               select: { fullName: true, position: true }
             }
           }
         },
-        playerStats: {
+        PlayerStats: {
           select: {
             playerId: true,
             goals: true,
             assists: true,
             minutesPlayed: true,
-            player: {
+            Player: {
               select: { fullName: true, position: true }
             }
           }
@@ -161,7 +161,7 @@ export async function POST(request) {
           academyId: userRecord.academyId
         },
         include: {
-          academy: {
+          Academy: {
             select: { id: true, name: true, location: true }
           }
         }
@@ -189,7 +189,7 @@ export async function POST(request) {
           academyId: userRecord.academyId
         },
         include: {
-          academy: {
+          Academy: {
             select: { id: true, name: true, location: true }
           }
         }

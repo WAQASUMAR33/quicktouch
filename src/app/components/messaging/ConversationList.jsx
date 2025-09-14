@@ -100,7 +100,8 @@ export default function ConversationList({ onConversationSelect, selectedConvers
           </div>
         ) : (
           conversations.map((conversation) => {
-            const otherParticipant = conversation.participant1Id === session?.user?.id 
+            const currentUserId = JSON.parse(localStorage.getItem('user'))?.id;
+            const otherParticipant = conversation.participant1Id === currentUserId 
               ? conversation.participant2 
               : conversation.participant1;
             const lastMessage = conversation.messages[0];
@@ -169,10 +170,23 @@ function NewConversationButton({ onStartConversation }) {
   const fetchUsers = async () => {
     setLoading(true);
     try {
-      const response = await fetch('/api/messaging/users');
+      const token = localStorage.getItem('token');
+      if (!token) {
+        console.error('No authentication token found');
+        return;
+      }
+
+      const response = await fetch('/api/messaging/users', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
       if (response.ok) {
         const data = await response.json();
         setUsers(data.users);
+      } else {
+        console.error('Failed to fetch users:', response.statusText);
       }
     } catch (err) {
       console.error('Error fetching users:', err);
