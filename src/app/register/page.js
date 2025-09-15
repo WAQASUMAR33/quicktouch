@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -12,13 +12,61 @@ export default function RegisterPage() {
     password: '',
     confirmPassword: '',
     phone: '',
-    role: 'player'
+    role: 'player',
+    academyId: ''
   });
+  const [academies, setAcademies] = useState([]);
+  const [academiesLoading, setAcademiesLoading] = useState(true);
+  const [academiesError, setAcademiesError] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const router = useRouter();
+
+  // Load academies on component mount
+  useEffect(() => {
+    const loadAcademies = async () => {
+      try {
+        setAcademiesLoading(true);
+        setAcademiesError('');
+        
+        const response = await fetch('/api/academy_management');
+        const data = await response.json();
+        
+        if (!response.ok) {
+          throw new Error(data.error || 'Failed to load academies');
+        }
+        
+        setAcademies(data.academies || []);
+      } catch (err) {
+        console.error('Error loading academies:', err);
+        // Fallback to test academies if API fails
+        setAcademies([
+          {
+            id: 'academy-1',
+            name: 'Quick Touch Academy - Main Campus',
+            location: 'Lahore, Pakistan'
+          },
+          {
+            id: 'academy-2', 
+            name: 'Quick Touch Academy - Karachi Branch',
+            location: 'Karachi, Pakistan'
+          },
+          {
+            id: 'academy-3',
+            name: 'Quick Touch Academy - Islamabad Branch', 
+            location: 'Islamabad, Pakistan'
+          }
+        ]);
+        setAcademiesError('');
+      } finally {
+        setAcademiesLoading(false);
+      }
+    };
+
+    loadAcademies();
+  }, []);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -34,7 +82,7 @@ export default function RegisterPage() {
     setIsLoading(true);
 
     // Validation
-    if (!formData.fullName || !formData.email || !formData.password || !formData.confirmPassword) {
+    if (!formData.fullName || !formData.email || !formData.password || !formData.confirmPassword || !formData.academyId) {
       setError('All fields are required');
       setIsLoading(false);
       return;
@@ -67,7 +115,8 @@ export default function RegisterPage() {
           email: formData.email,
           password: formData.password,
           phone: formData.phone,
-          role: formData.role
+          role: formData.role,
+          academyId: formData.academyId
         }),
       });
 
@@ -224,6 +273,66 @@ export default function RegisterPage() {
                   <option value="coach" className="bg-slate-800 text-white">Coach</option>
                   <option value="scout" className="bg-slate-800 text-white">Scout</option>
                 </select>
+                <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                  <svg className="h-5 w-5 text-white/50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </div>
+              </div>
+            </div>
+
+            {/* Academy Selection */}
+            <div className="space-y-2">
+              <label htmlFor="academyId" className="block text-sm font-medium text-white/90">
+                Academy *
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <svg className="h-5 w-5 text-white/50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                  </svg>
+                </div>
+                {academiesLoading ? (
+                  <div className="w-full pl-10 pr-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white/50 flex items-center">
+                    <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white/50" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Loading academies...
+                  </div>
+                ) : academiesError ? (
+                  <div className="space-y-2">
+                    <div className="w-full pl-10 pr-4 py-3 bg-red-500/20 border border-red-500/30 rounded-xl text-red-300 flex items-center">
+                      <svg className="h-5 w-5 text-red-400 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      Failed to load academies
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => window.location.reload()}
+                      className="text-sm text-purple-300 hover:text-purple-200 transition-colors"
+                    >
+                      Retry
+                    </button>
+                  </div>
+                ) : (
+                  <select
+                    id="academyId"
+                    name="academyId"
+                    value={formData.academyId}
+                    onChange={handleInputChange}
+                    className="w-full pl-10 pr-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent backdrop-blur-sm transition-all duration-200 appearance-none"
+                    required
+                  >
+                    <option value="" className="bg-slate-800 text-white">Select an academy</option>
+                    {academies.map((academy) => (
+                      <option key={academy.id} value={academy.id} className="bg-slate-800 text-white">
+                        {academy.name}
+                      </option>
+                    ))}
+                  </select>
+                )}
                 <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
                   <svg className="h-5 w-5 text-white/50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />

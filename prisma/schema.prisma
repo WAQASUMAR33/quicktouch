@@ -11,8 +11,12 @@ model Academy {
   id           String         @id
   name         String
   location     String
+  description  String?
+  contactEmail String?
+  contactPhone String?
   adminIds     String         @db.LongText
   createdAt    DateTime       @default(now())
+  updatedAt    DateTime?
   Event        Event[]
   Match        Match[]
   Player       Player[]
