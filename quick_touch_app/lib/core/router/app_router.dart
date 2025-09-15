@@ -12,21 +12,22 @@ import '../../screens/ai_insights/ai_insights_screen.dart';
 import '../../screens/advanced_stats/advanced_stats_screen.dart';
 import '../../screens/profile/profile_screen.dart';
 import '../../screens/splash/splash_screen.dart';
+import '../../screens/test/academy_test_screen.dart';
 
 // Router configuration
 final routerProvider = Provider<GoRouter>((ref) {
-  final authState = ref.watch(authStateProvider);
-  
   return GoRouter(
     initialLocation: '/splash',
     redirect: (context, state) {
-      final isAuthenticated = authState.when(
-        data: (user) => user != null,
-        loading: () => false,
-        error: (_, __) => false,
-      );
-
+      final authState = ref.read(authStateProvider);
+      final isAuthenticated = authState.isAuthenticated;
       final isAuthRoute = state.matchedLocation.startsWith('/auth');
+      final isSplashRoute = state.matchedLocation == '/splash';
+
+      // Allow splash screen to load first
+      if (isSplashRoute) {
+        return null;
+      }
 
       // If not authenticated and not on auth route, redirect to login
       if (!isAuthenticated && !isAuthRoute) {
@@ -90,6 +91,11 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/profile',
         name: 'profile',
         builder: (context, state) => const ProfileScreen(),
+      ),
+      GoRoute(
+        path: '/test/academies',
+        name: 'academy-test',
+        builder: (context, state) => const AcademyTestScreen(),
       ),
     ],
     errorBuilder: (context, state) => Scaffold(
@@ -164,5 +170,9 @@ class AppRouter {
     } else {
       context.go('/dashboard');
     }
+  }
+
+  static void goToAcademyTest(BuildContext context) {
+    context.go('/test/academies');
   }
 }

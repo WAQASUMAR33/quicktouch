@@ -8,7 +8,12 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
   // Initialize API Service
-  ApiService().initialize();
+  final apiService = ApiService();
+  apiService.initialize();
+  
+  // Test API connection
+  final isConnected = await apiService.testConnection();
+  print('🌐 API Connection: ${isConnected ? "✅ Connected" : "❌ Failed"}');
   
   runApp(
     const ProviderScope(

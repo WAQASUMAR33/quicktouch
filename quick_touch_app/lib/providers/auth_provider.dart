@@ -30,13 +30,13 @@ class AuthState {
 }
 
 // Auth state provider
-final authStateProvider = StateNotifierProvider<AuthNotifier, AsyncValue<User?>>((ref) {
+final authStateProvider = StateNotifierProvider<AuthNotifier, AuthState>((ref) {
   return AuthNotifier();
 });
 
 // Auth notifier
-class AuthNotifier extends StateNotifier<AsyncValue<User?>> {
-  AuthNotifier() : super(const AsyncValue.loading()) {
+class AuthNotifier extends StateNotifier<AuthState> {
+  AuthNotifier() : super(const AuthState()) {
     _initializeAuth();
   }
 
@@ -44,88 +44,83 @@ class AuthNotifier extends StateNotifier<AsyncValue<User?>> {
 
   Future<void> _initializeAuth() async {
     try {
+      state = state.copyWith(isLoading: true);
       await _apiService.loadToken();
       if (_apiService.isAuthenticated) {
         // Fetch user data from stored token
         final userData = await _apiService.getCurrentUser();
         if (userData != null) {
           final user = User.fromJson(userData);
-          state = AsyncValue.data(user);
+          state = state.copyWith(user: user, isLoading: false);
         } else {
-          state = const AsyncValue.data(null);
+          state = state.copyWith(user: null, isLoading: false);
         }
       } else {
-        state = const AsyncValue.data(null);
+        state = state.copyWith(user: null, isLoading: false);
       }
     } catch (e) {
-      state = AsyncValue.error(e, StackTrace.current);
+      state = state.copyWith(error: e.toString(), isLoading: false);
     }
   }
 
-  Future<void> login(String email, String password) async {
+  Future<bool> login(String email, String password) async {
     try {
-      state = const AsyncValue.loading();
+      state = state.copyWith(isLoading: true, error: null);
       
       final response = await _apiService.login(email, password);
       
       // Create user object from response
       final user = User.fromJson(response['user']);
       
-      state = AsyncValue.data(user);
+      state = state.copyWith(user: user, isLoading: false);
+      return true;
     } catch (e) {
-      state = AsyncValue.error(e, StackTrace.current);
+      state = state.copyWith(error: e.toString(), isLoading: false);
+      return false;
     }
   }
 
-  Future<void> register(Map<String, dynamic> userData) async {
+  Future<bool> register(Map<String, dynamic> userData) async {
     try {
-      state = const AsyncValue.loading();
+      state = state.copyWith(isLoading: true, error: null);
       
       final response = await _apiService.register(userData);
       
       // Create user object from response
       final user = User.fromJson(response['user']);
       
-      state = AsyncValue.data(user);
+      state = state.copyWith(user: user, isLoading: false);
+      return true;
     } catch (e) {
-      state = AsyncValue.error(e, StackTrace.current);
+      state = state.copyWith(error: e.toString(), isLoading: false);
+      return false;
     }
   }
 
   Future<void> logout() async {
     try {
       await _apiService.logout();
-      state = const AsyncValue.data(null);
+      state = const AuthState();
     } catch (e) {
-      state = AsyncValue.error(e, StackTrace.current);
+      state = state.copyWith(error: e.toString());
     }
   }
 
   void clearError() {
-    if (state.hasError) {
-      state = const AsyncValue.data(null);
-    }
+    state = state.copyWith(error: null);
   }
 }
 
 // User provider for easy access to current user
 final currentUserProvider = Provider<User?>((ref) {
   final authState = ref.watch(authStateProvider);
-  return authState.when(
-    data: (user) => user,
-    loading: () => null,
-    error: (_, __) => null,
-  );
+  return authState.user;
 });
 
 // Authentication status provider
 final isAuthenticatedProvider = Provider<bool>((ref) {
   final authState = ref.watch(authStateProvider);
-  return authState.when(
-    data: (user) => user != null,
-    loading: () => false,
-    error: (_, __) => false,
-  );
+  return authState.isAuthenticated;
 });
 
 // User role provider

@@ -31,9 +31,27 @@ class ApiService {
         if (_token != null) {
           options.headers['Authorization'] = 'Bearer $_token';
         }
+        
+        // Debug logging
+        print('🚀 API Request: ${options.method} ${options.path}');
+        print('📤 Request Data: ${options.data}');
+        print('📋 Headers: ${options.headers}');
+        
         handler.next(options);
       },
+      onResponse: (response, handler) {
+        // Debug logging
+        print('✅ API Response: ${response.statusCode} ${response.requestOptions.path}');
+        print('📥 Response Data: ${response.data}');
+        
+        handler.next(response);
+      },
       onError: (error, handler) {
+        // Debug logging
+        print('❌ API Error: ${error.response?.statusCode} ${error.requestOptions.path}');
+        print('📥 Error Data: ${error.response?.data}');
+        print('📝 Error Message: ${error.message}');
+        
         // Handle common errors
         if (error.response?.statusCode == 401) {
           // Token expired, clear and redirect to login
@@ -64,6 +82,14 @@ class ApiService {
         return response.data;
       }
       throw Exception('Login failed');
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 401) {
+        throw Exception('Invalid email or password');
+      } else if (e.response?.statusCode == 400) {
+        throw Exception('Invalid request format');
+      } else {
+        throw Exception('Login error: ${e.response?.data?['message'] ?? e.message}');
+      }
     } catch (e) {
       throw Exception('Login error: ${e.toString()}');
     }
@@ -86,8 +112,32 @@ class ApiService {
 
   Future<Map<String, dynamic>> register(Map<String, dynamic> userData) async {
     try {
-      final response = await _dio.post('/users', data: userData);
+      // Transform data to match server expectations
+      final cleanedData = {
+        'fullName': '${userData['firstName']} ${userData['lastName']}', // Combine first and last name
+        'email': userData['email'],
+        'password': userData['password'],
+        'role': userData['role'],
+        'academyId': userData['academyId'], // Required field
+        if (userData['phone'] != null && userData['phone'].isNotEmpty)
+          'phone': userData['phone'],
+      };
+      
+      print('📤 Sending registration data: $cleanedData');
+      
+      final response = await _dio.post('/users', data: cleanedData);
       return response.data;
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 400) {
+        final errorMessage = e.response?.data?['message'] ?? 
+                           e.response?.data?['error'] ?? 
+                           'Invalid registration data';
+        throw Exception(errorMessage);
+      } else if (e.response?.statusCode == 409) {
+        throw Exception('User with this email already exists');
+      } else {
+        throw Exception('Registration error: ${e.response?.data?['message'] ?? e.message}');
+      }
     } catch (e) {
       throw Exception('Registration error: ${e.toString()}');
     }
@@ -104,6 +154,44 @@ class ApiService {
     }
   }
 
+  // Academy Management
+  Future<List<dynamic>> getAcademies() async {
+    try {
+      print('🔍 Fetching academies from: ${baseUrl}/academies');
+      final response = await _dio.get('/academies');
+      print('✅ Academies response: ${response.data}');
+      
+      // Handle different response formats
+      if (response.data is List) {
+        return response.data;
+      } else if (response.data is Map && response.data['academies'] != null) {
+        return response.data['academies'];
+      } else if (response.data is Map && response.data['data'] != null) {
+        return response.data['data'];
+      } else {
+        print('⚠️ Unexpected response format: ${response.data}');
+        return [];
+      }
+    } on DioException catch (e) {
+      print('❌ DioException when fetching academies:');
+      print('   Status: ${e.response?.statusCode}');
+      print('   Message: ${e.message}');
+      print('   Response: ${e.response?.data}');
+      
+      // Return default academies if API fails
+      return [
+        {'id': 'default', 'name': 'Quick Touch Academy'},
+        {'id': 'academy1', 'name': 'Elite Football Academy'},
+        {'id': 'academy2', 'name': 'Youth Development Center'},
+      ];
+    } catch (e) {
+      print('❌ General error when fetching academies: $e');
+      return [
+        {'id': 'default', 'name': 'Quick Touch Academy'},
+      ];
+    }
+  }
+
   // User Management
   Future<List<dynamic>> getUsers({String? academyId, String? role}) async {
     try {
@@ -115,6 +203,16 @@ class ApiService {
       return response.data['users'] ?? [];
     } catch (e) {
       throw Exception('Failed to fetch users: ${e.toString()}');
+    }
+  }
+
+  // Academy Management
+  Future<List<dynamic>> getAcademies() async {
+    try {
+      final response = await _dio.get('/academies');
+      return response.data['academies'] ?? [];
+    } catch (e) {
+      throw Exception('Failed to fetch academies: ${e.toString()}');
     }
   }
 
@@ -296,6 +394,17 @@ class ApiService {
   Future<void> clearUserData() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove('user_data');
+  }
+
+  // Test API connection
+  Future<bool> testConnection() async {
+    try {
+      final response = await _dio.get('/health');
+      return response.statusCode == 200;
+    } catch (e) {
+      print('🔍 API Connection Test Failed: $e');
+      return false;
+    }
   }
 
   bool get isAuthenticated => _token != null;

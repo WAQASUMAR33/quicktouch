@@ -61,21 +61,11 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
     if (mounted) {
       final authState = ref.read(authStateProvider);
       
-      authState.when(
-        data: (user) {
-          if (user != null) {
-            context.go('/dashboard');
-          } else {
-            context.go('/auth/login');
-          }
-        },
-        loading: () {
-          // Keep showing splash while loading
-        },
-        error: (_, __) {
-          context.go('/auth/login');
-        },
-      );
+      if (authState.isAuthenticated) {
+        context.go('/dashboard');
+      } else {
+        context.go('/auth/login');
+      }
     }
   }
 
@@ -94,12 +84,11 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    // App Logo/Icon
+                    // App Logo
                     Container(
                       width: 120,
                       height: 120,
                       decoration: BoxDecoration(
-                        color: AppTheme.secondaryColor,
                         borderRadius: BorderRadius.circular(20),
                         boxShadow: [
                           BoxShadow(
@@ -109,10 +98,14 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
                           ),
                         ],
                       ),
-                      child: const Icon(
-                        Icons.sports_soccer,
-                        size: 60,
-                        color: Colors.white,
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(20),
+                        child: Image.asset(
+                          'assets/images/quicktouch.png',
+                          width: 120,
+                          height: 120,
+                          fit: BoxFit.contain,
+                        ),
                       ),
                     ),
                     

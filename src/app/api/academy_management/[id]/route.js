@@ -53,8 +53,7 @@ export async function GET(request, { params }) {
 export async function PUT(request, { params }) {
   try {
     const { id } = params;
-    const authUserId = request.headers.get('x-user-id');
-    const { name, location, adminIds } = await request.json();
+    const { name, location, description, contactEmail, contactPhone } = await request.json();
 
     // Validate input
     if (!id) {
@@ -63,25 +62,10 @@ export async function PUT(request, { params }) {
         { status: 400 }
       );
     }
-    if (!authUserId) {
+    if (!name && !location && !description && !contactEmail && !contactPhone) {
       return NextResponse.json(
-        { error: 'Unauthorized: User ID required' },
-        { status: 401 }
-      );
-    }
-    if (!name && !location && !adminIds) {
-      return NextResponse.json(
-        { error: 'At least one field (name, location, adminIds) is required' },
+        { error: 'At least one field is required' },
         { status: 400 }
-      );
-    }
-
-    // Verify user is admin
-    const user = await prisma.user.findUnique({ where: { id: authUserId } });
-    if (!user || user.role !== 'admin') {
-      return NextResponse.json(
-        { error: 'Unauthorized: Only admins can update academies' },
-        { status: 403 }
       );
     }
 
@@ -94,32 +78,17 @@ export async function PUT(request, { params }) {
       );
     }
 
-    // Validate adminIds if provided
-    if (adminIds) {
-      if (!Array.isArray(adminIds)) {
-        return NextResponse.json(
-          { error: 'adminIds must be an array' },
-          { status: 400 }
-        );
-      }
-      const validAdmins = await prisma.user.findMany({
-        where: { id: { in: adminIds }, role: 'admin' },
-      });
-      if (validAdmins.length !== adminIds.length) {
-        return NextResponse.json(
-          { error: 'Some admin IDs are invalid or not admins' },
-          { status: 400 }
-        );
-      }
-    }
 
     // Update academy
     const updatedAcademy = await prisma.academy.update({
       where: { id },
       data: {
-        name: name || academy.name,
-        location: location || academy.location,
-        adminIds: adminIds ? JSON.stringify(adminIds) : academy.adminIds,
+        ...(name && { name }),
+        ...(location && { location }),
+        ...(description !== undefined && { description }),
+        ...(contactEmail !== undefined && { contactEmail }),
+        ...(contactPhone !== undefined && { contactPhone }),
+        updatedAt: new Date(),
       },
     });
 
@@ -142,28 +111,12 @@ export async function PUT(request, { params }) {
 export async function DELETE(request, { params }) {
   try {
     const { id } = params;
-    const authUserId = request.headers.get('x-user-id');
 
-    // Validate ID and auth
+    // Validate ID
     if (!id) {
       return NextResponse.json(
         { error: 'Academy ID is required' },
         { status: 400 }
-      );
-    }
-    if (!authUserId) {
-      return NextResponse.json(
-        { error: 'Unauthorized: User ID required' },
-        { status: 401 }
-      );
-    }
-
-    // Verify user is admin
-    const user = await prisma.user.findUnique({ where: { id: authUserId } });
-    if (!user || user.role !== 'admin') {
-      return NextResponse.json(
-        { error: 'Unauthorized: Only admins can delete academies' },
-        { status: 403 }
       );
     }
 

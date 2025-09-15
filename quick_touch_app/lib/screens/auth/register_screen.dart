@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 
 import '../../providers/auth_provider.dart';
+import '../../providers/academy_provider.dart';
+import '../../models/academy_model.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/router/app_router.dart';
 
@@ -25,6 +26,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
   String _selectedRole = 'player';
+  String? _selectedAcademy;
   bool _agreeToTerms = false;
 
   final List<String> _roles = [
@@ -47,36 +49,43 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   }
 
   void _handleRegister() async {
-    if (_formKey.currentState!.validate() && _agreeToTerms) {
-      try {
-        final userData = {
-          'firstName': _firstNameController.text.trim(),
-          'lastName': _lastNameController.text.trim(),
-          'email': _emailController.text.trim(),
-          'phone': _phoneController.text.trim(),
-          'password': _passwordController.text,
-          'role': _selectedRole,
-        };
+    if (_formKey.currentState!.validate() && _agreeToTerms && _selectedAcademy != null) {
+      final userData = {
+        'firstName': _firstNameController.text.trim(),
+        'lastName': _lastNameController.text.trim(),
+        'email': _emailController.text.trim(),
+        'phone': _phoneController.text.trim(),
+        'password': _passwordController.text,
+        'role': _selectedRole,
+        'academyId': _selectedAcademy,
+      };
 
-        await ref.read(authStateProvider.notifier).register(userData);
-        
-        if (mounted) {
-          AppRouter.goToDashboard(context);
-      }
-    } catch (e) {
+      final success = await ref.read(authStateProvider.notifier).register(userData);
+      
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Registration failed: ${e.toString()}'),
+        if (success) {
+          AppRouter.goToDashboard(context);
+        } else {
+          final authState = ref.read(authStateProvider);
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Registration failed: ${authState.error ?? 'Unknown error'}'),
               backgroundColor: AppTheme.errorColor,
-          ),
-        );
-      }
+            ),
+          );
+        }
       }
     } else if (!_agreeToTerms) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Please agree to the terms and conditions'),
+          backgroundColor: AppTheme.errorColor,
+        ),
+      );
+    } else if (_selectedAcademy == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please select an academy'),
           backgroundColor: AppTheme.errorColor,
         ),
       );
@@ -86,6 +95,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   @override
   Widget build(BuildContext context) {
     final authState = ref.watch(authStateProvider);
+    final academyState = ref.watch(academyStateProvider);
     
     return Scaffold(
       backgroundColor: AppTheme.primaryColor,
@@ -100,10 +110,10 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(24.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                // Title
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // Title
               Center(
                 child: Column(
                   children: [
@@ -111,26 +121,29 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                       width: 80,
                       height: 80,
                       decoration: BoxDecoration(
-                        color: AppTheme.secondaryColor,
                         borderRadius: BorderRadius.circular(16),
                       ),
-                      child: const Icon(
-                        Icons.sports_soccer,
-                        size: 40,
-                        color: Colors.white,
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(16),
+                        child: Image.asset(
+                          'assets/images/quicktouch.png',
+                          width: 80,
+                          height: 80,
+                          fit: BoxFit.contain,
+                        ),
                       ),
                     ),
                     const SizedBox(height: 24),
                     Text(
-                  'Create Account',
+                      'Create Account',
                       style: Theme.of(context).textTheme.displaySmall?.copyWith(
                         color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 8),
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
                     Text(
-                  'Join Quick Touch Academy',
+                      'Join Quick Touch Academy',
                       style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                         color: Colors.white70,
                       ),
@@ -142,9 +155,9 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
               const SizedBox(height: 32),
               
               // Registration Form
-                Container(
+              Container(
                 padding: const EdgeInsets.all(24.0),
-                  decoration: BoxDecoration(
+                decoration: BoxDecoration(
                   color: const Color(0xFF2C2C2C), // Dark charcoal
                   borderRadius: BorderRadius.circular(16),
                   boxShadow: [
@@ -170,61 +183,61 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                                 labelText: 'First Name',
                                 prefixIcon: Icon(Icons.person_outline),
                               ),
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
+                              validator: (value) {
+                                if (value == null || value.isEmpty) {
                                   return 'Required';
-                    }
-                    return null;
-                  },
-                ),
+                                }
+                                return null;
+                              },
+                            ),
                           ),
                           const SizedBox(width: 16),
                           Expanded(
                             child: TextFormField(
-                  controller: _lastNameController,
+                              controller: _lastNameController,
                               decoration: const InputDecoration(
                                 labelText: 'Last Name',
                                 prefixIcon: Icon(Icons.person_outline),
                               ),
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
+                              validator: (value) {
+                                if (value == null || value.isEmpty) {
                                   return 'Required';
-                    }
-                    return null;
-                  },
+                                }
+                                return null;
+                              },
                             ),
                           ),
                         ],
-                ),
-                
+                      ),
+                      
                       const SizedBox(height: 16),
-                
+                      
                       // Email Field
                       TextFormField(
-                  controller: _emailController,
-                  keyboardType: TextInputType.emailAddress,
+                        controller: _emailController,
+                        keyboardType: TextInputType.emailAddress,
                         decoration: const InputDecoration(
                           labelText: 'Email',
                           prefixIcon: Icon(Icons.email_outlined),
                           hintText: 'Enter your email',
                         ),
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Please enter your email';
-                    }
-                    if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
-                      return 'Please enter a valid email';
-                    }
-                    return null;
-                  },
-                ),
-                
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Please enter your email';
+                          }
+                          if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
+                            return 'Please enter a valid email';
+                          }
+                          return null;
+                        },
+                      ),
+                      
                       const SizedBox(height: 16),
-                
+                      
                       // Phone Field
                       TextFormField(
-                  controller: _phoneController,
-                  keyboardType: TextInputType.phone,
+                        controller: _phoneController,
+                        keyboardType: TextInputType.phone,
                         decoration: const InputDecoration(
                           labelText: 'Phone (Optional)',
                           prefixIcon: Icon(Icons.phone_outlined),
@@ -256,68 +269,136 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                       
                       const SizedBox(height: 16),
                       
+                      // Academy Selection
+                      academyState.isLoading
+                          ? const TextField(
+                              decoration: InputDecoration(
+                                labelText: 'Academy',
+                                prefixIcon: Icon(Icons.school_outlined),
+                                suffixIcon: SizedBox(
+                                  width: 20,
+                                  height: 20,
+                                  child: CircularProgressIndicator(strokeWidth: 2),
+                                ),
+                              ),
+                              enabled: false,
+                            )
+                          : academyState.error != null
+                              ? Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    TextField(
+                                      decoration: const InputDecoration(
+                                        labelText: 'Academy',
+                                        prefixIcon: Icon(Icons.school_outlined),
+                                        suffixIcon: Icon(Icons.error, color: Colors.red),
+                                      ),
+                                      enabled: false,
+                                    ),
+                                    const SizedBox(height: 8),
+                                    Text(
+                                      'Failed to load academies: ${academyState.error}',
+                                      style: const TextStyle(color: Colors.red, fontSize: 12),
+                                    ),
+                                    const SizedBox(height: 8),
+                                    ElevatedButton(
+                                      onPressed: () {
+                                        ref.read(academyStateProvider.notifier).loadAcademies();
+                                      },
+                                      child: const Text('Retry'),
+                                    ),
+                                  ],
+                                )
+                              : DropdownButtonFormField<String>(
+                                  value: _selectedAcademy,
+                                  decoration: const InputDecoration(
+                                    labelText: 'Academy *',
+                                    prefixIcon: Icon(Icons.school_outlined),
+                                  ),
+                                  hint: const Text('Select an academy'),
+                                  items: academyState.academies.map((academy) {
+                                    return DropdownMenuItem(
+                                      value: academy.id,
+                                      child: Text(academy.name),
+                                    );
+                                  }).toList(),
+                                  onChanged: (value) {
+                                    setState(() {
+                                      _selectedAcademy = value;
+                                    });
+                                  },
+                                  validator: (value) {
+                                    if (value == null || value.isEmpty) {
+                                      return 'Please select an academy';
+                                    }
+                                    return null;
+                                  },
+                                ),
+                      
+                      const SizedBox(height: 16),
+                      
                       // Password Field
                       TextFormField(
-                  controller: _passwordController,
-                  obscureText: _obscurePassword,
+                        controller: _passwordController,
+                        obscureText: _obscurePassword,
                         decoration: InputDecoration(
                           labelText: 'Password',
                           prefixIcon: const Icon(Icons.lock_outlined),
                           hintText: 'Enter your password',
-                  suffixIcon: IconButton(
-                    icon: Icon(
-                      _obscurePassword ? Icons.visibility : Icons.visibility_off,
-                    ),
-                    onPressed: () {
+                          suffixIcon: IconButton(
+                            icon: Icon(
+                              _obscurePassword ? Icons.visibility : Icons.visibility_off,
+                            ),
+                            onPressed: () {
                               setState(() {
                                 _obscurePassword = !_obscurePassword;
                               });
-                    },
+                            },
                           ),
-                  ),
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Please enter your password';
-                    }
-                    if (value.length < 6) {
-                      return 'Password must be at least 6 characters';
-                    }
-                    return null;
-                  },
-                ),
-                
+                        ),
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Please enter your password';
+                          }
+                          if (value.length < 6) {
+                            return 'Password must be at least 6 characters';
+                          }
+                          return null;
+                        },
+                      ),
+                      
                       const SizedBox(height: 16),
-                
+                      
                       // Confirm Password Field
                       TextFormField(
-                  controller: _confirmPasswordController,
-                  obscureText: _obscureConfirmPassword,
+                        controller: _confirmPasswordController,
+                        obscureText: _obscureConfirmPassword,
                         decoration: InputDecoration(
                           labelText: 'Confirm Password',
                           prefixIcon: const Icon(Icons.lock_outlined),
                           hintText: 'Confirm your password',
-                  suffixIcon: IconButton(
-                    icon: Icon(
-                      _obscureConfirmPassword ? Icons.visibility : Icons.visibility_off,
-                    ),
-                    onPressed: () {
+                          suffixIcon: IconButton(
+                            icon: Icon(
+                              _obscureConfirmPassword ? Icons.visibility : Icons.visibility_off,
+                            ),
+                            onPressed: () {
                               setState(() {
                                 _obscureConfirmPassword = !_obscureConfirmPassword;
                               });
-                    },
+                            },
                           ),
-                  ),
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Please confirm your password';
-                    }
-                    if (value != _passwordController.text) {
-                      return 'Passwords do not match';
-                    }
-                    return null;
-                  },
-                ),
-                
+                        ),
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Please confirm your password';
+                          }
+                          if (value != _passwordController.text) {
+                            return 'Passwords do not match';
+                          }
+                          return null;
+                        },
+                      ),
+                      
                       const SizedBox(height: 16),
                       
                       // Terms and Conditions
@@ -391,11 +472,11 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                               )
                             : const Text(
                                 'Create Account',
-                        style: TextStyle(
+                                style: TextStyle(
                                   fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
                       ),
                       
                       const SizedBox(height: 24),
@@ -411,11 +492,11 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                           TextButton(
                             onPressed: () => AppRouter.goToLogin(context),
                             child: const Text('Sign In'),
-                    ),
-                  ],
-                ),
-              ],
-            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ],
@@ -424,4 +505,5 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
       ),
     );
   }
+}
 }

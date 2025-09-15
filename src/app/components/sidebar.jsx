@@ -19,6 +19,7 @@ import {
   Settings,
   FileText,
   Target,
+  Building2,
 } from 'lucide-react';
 
 export default function Sidebar({ isOpen, toggleSidebar }) {
@@ -59,6 +60,7 @@ export default function Sidebar({ isOpen, toggleSidebar }) {
     { href: '/pages/advanced-stats', label: 'Advanced Stats', icon: Target },
     { href: '/pages/training_programs', label: 'Training Programs', icon: Trophy },
     { href: '/pages/attandance_management', label: 'Attendance', icon: UserCheck },
+    { href: '/pages/academy_management', label: 'Academy Management', icon: Building2 },
     { href: '/pages/users', label: 'User Management', icon: Settings },
   ];
 

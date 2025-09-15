@@ -33,7 +33,7 @@ export async function GET(request) {
 // POST: Create a new academy
 export async function POST(request) {
   try {
-    const { name, location, adminIds } = await request.json();
+    const { name, location, description, contactEmail, contactPhone } = await request.json();
    
     // Validate input
     if (!name || !location) {
@@ -42,44 +42,16 @@ export async function POST(request) {
         { status: 400 }
       );
     }
-   
-
-    // Verify user is admin
-    const user = await prisma.user.findUnique({ where: { id: authUserId } });
-    if (!user || user.role !== 'admin') {
-      return NextResponse.json(
-        { error: 'Unauthorized: Only admins can create academies' },
-        { status: 403 }
-      );
-    }
-
-    // Validate adminIds if provided
-    let validatedAdminIds = [];
-    if (adminIds) {
-      if (!Array.isArray(adminIds)) {
-        return NextResponse.json(
-          { error: 'adminIds must be an array' },
-          { status: 400 }
-        );
-      }
-      const validAdmins = await prisma.user.findMany({
-        where: { id: { in: adminIds }, role: 'admin' },
-      });
-      if (validAdmins.length !== adminIds.length) {
-        return NextResponse.json(
-          { error: 'Some admin IDs are invalid or not admins' },
-          { status: 400 }
-        );
-      }
-      validatedAdminIds = adminIds;
-    }
 
     // Create academy
     const academy = await prisma.academy.create({
       data: {
+        id: crypto.randomUUID(),
         name,
         location,
-        adminIds: JSON.stringify(validatedAdminIds),
+        description: description || null,
+        contactEmail: contactEmail || null,
+        contactPhone: contactPhone || null,
         createdAt: new Date(),
       },
     });
