@@ -198,7 +198,7 @@ export async function GET(request) {
         academyId: true,
         isEmailVerified: true,
         createdAt: true,
-        academy: {
+        Academy: {
           select: { id: true, name: true }
         }
       },

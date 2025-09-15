@@ -54,7 +54,7 @@ export async function GET(request) {
     const programs = await prisma.trainingProgram.findMany({
       where: whereClause,
       include: {
-        academy: {
+        Academy: {
           select: { id: true, name: true, location: true }
         },
         attendance: {
@@ -127,7 +127,7 @@ export async function POST(request) {
         academyId: userRecord.academyId
       },
       include: {
-        academy: {
+        Academy: {
           select: { id: true, name: true, location: true }
         }
       }
@@ -142,7 +142,7 @@ export async function POST(request) {
       duration: program.duration,
       type: program.type,
       academyId: program.academyId,
-      academy: program.academy,
+      academy: program.Academy,
       createdAt: program.createdAt,
       message: "Training program created successfully",
     }, { status: 201 });

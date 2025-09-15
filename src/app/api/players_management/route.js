@@ -68,7 +68,7 @@ export async function POST(request) {
         academyId: data.academyId
       },
       include: {
-        academy: {
+        Academy: {
           select: { id: true, name: true }
         }
       }
@@ -83,7 +83,7 @@ export async function POST(request) {
         position: player.position,
         highlightReels: player.highlightReels,
         academyId: player.academyId,
-        academy: player.academy,
+        academy: player.Academy,
         createdAt: player.createdAt,
         updatedAt: player.updatedAt,
         message: "Player created successfully",

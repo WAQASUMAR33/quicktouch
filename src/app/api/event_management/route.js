@@ -174,7 +174,7 @@ export async function POST(request) {
         location: match.location,
         type: match.type,
         academyId: match.academyId,
-        academy: match.academy,
+        academy: match.Academy,
         createdAt: match.createdAt,
         message: "Match created successfully",
       }, { status: 201 });
@@ -203,7 +203,7 @@ export async function POST(request) {
         location: event.location,
         type: event.type,
         academyId: event.academyId,
-        academy: event.academy,
+        academy: event.Academy,
         createdAt: event.createdAt,
         message: "Event created successfully",
       }, { status: 201 });
