@@ -38,7 +38,7 @@ export default function UserManagementPage() {
         });
         if (!response.ok) throw new Error('Failed to fetch users');
         const data = await response.json();
-        setUsers(data); // Adjust if API returns paginated data (e.g., data.users)
+        setUsers(data.users || []); // API returns { users: [...] }
       } catch (err) {
         setError(err.message);
       } finally {
@@ -139,8 +139,8 @@ export default function UserManagementPage() {
   // Pagination logic
   const indexOfLastItem = currentPage * itemsPerPage;
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
-  const currentUsers = users.slice(indexOfFirstItem, indexOfLastItem);
-  const totalPages = Math.ceil(users.length / itemsPerPage);
+  const currentUsers = (users || []).slice(indexOfFirstItem, indexOfLastItem);
+  const totalPages = Math.ceil((users || []).length / itemsPerPage);
 
   const paginate = (pageNumber) => setCurrentPage(pageNumber);
 
