@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:convert';
 
 class ApiService {
   static final ApiService _instance = ApiService._internal();
@@ -9,8 +10,8 @@ class ApiService {
   late Dio _dio;
   String? _token;
   
-  // Base URL - Update this to match your Next.js server
-  static const String baseUrl = 'http://localhost:3000/api';
+  // Base URL - Production API endpoint
+  static const String baseUrl = 'https://quicktouch.vercel.app/api';
   
   void initialize() {
     _dio = Dio(BaseOptions(
@@ -54,11 +55,32 @@ class ApiService {
       if (response.statusCode == 200) {
         _token = response.data['token'];
         await _saveToken(_token!);
+        
+        // Save user data
+        if (response.data['user'] != null) {
+          await _saveUserData(response.data['user']);
+        }
+        
         return response.data;
       }
       throw Exception('Login failed');
     } catch (e) {
       throw Exception('Login error: ${e.toString()}');
+    }
+  }
+
+  Future<Map<String, dynamic>?> getCurrentUser() async {
+    try {
+      if (!isAuthenticated) return null;
+      
+      final prefs = await SharedPreferences.getInstance();
+      final userData = prefs.getString('user_data');
+      if (userData != null) {
+        return Map<String, dynamic>.from(json.decode(userData));
+      }
+      return null;
+    } catch (e) {
+      return null;
     }
   }
 
@@ -78,6 +100,7 @@ class ApiService {
       // Continue with logout even if API call fails
     } finally {
       await clearToken();
+      await clearUserData();
     }
   }
 
@@ -254,6 +277,11 @@ class ApiService {
     await prefs.setString('auth_token', token);
   }
 
+  Future<void> _saveUserData(Map<String, dynamic> userData) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('user_data', json.encode(userData));
+  }
+
   Future<void> loadToken() async {
     final prefs = await SharedPreferences.getInstance();
     _token = prefs.getString('auth_token');
@@ -263,6 +291,11 @@ class ApiService {
     _token = null;
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove('auth_token');
+  }
+
+  Future<void> clearUserData() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('user_data');
   }
 
   bool get isAuthenticated => _token != null;

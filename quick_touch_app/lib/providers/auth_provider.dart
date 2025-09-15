@@ -46,9 +46,14 @@ class AuthNotifier extends StateNotifier<AsyncValue<User?>> {
     try {
       await _apiService.loadToken();
       if (_apiService.isAuthenticated) {
-        // TODO: Fetch user data from API
-        // For now, we'll create a placeholder user
-        state = const AsyncValue.data(null);
+        // Fetch user data from stored token
+        final userData = await _apiService.getCurrentUser();
+        if (userData != null) {
+          final user = User.fromJson(userData);
+          state = AsyncValue.data(user);
+        } else {
+          state = const AsyncValue.data(null);
+        }
       } else {
         state = const AsyncValue.data(null);
       }

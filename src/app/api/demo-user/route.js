@@ -11,6 +11,47 @@ export async function POST() {
     });
 
     if (existingUser) {
+      // Check if there's a corresponding Player record
+      const existingPlayer = await prisma.player.findUnique({
+        where: { userId: existingUser.id }
+      });
+
+      if (!existingPlayer) {
+        // Create Player record for existing user
+        const academy = await prisma.academy.findFirst();
+        if (academy) {
+          const player = await prisma.player.create({
+            data: {
+              id: uuidv4(),
+              userId: existingUser.id,
+              fullName: "Demo Player",
+              age: 18,
+              height: 1.75,
+              position: "Midfielder",
+              highlightReels: JSON.stringify([]),
+              academyId: academy.id,
+              updatedAt: new Date()
+            }
+          });
+          
+          return NextResponse.json({
+            message: "Demo user exists, player record created",
+            user: {
+              id: existingUser.id,
+              email: existingUser.email,
+              fullName: existingUser.fullName,
+              role: existingUser.role
+            },
+            player: {
+              id: player.id,
+              fullName: player.fullName,
+              age: player.age,
+              position: player.position
+            }
+          });
+        }
+      }
+
       return NextResponse.json({
         message: "Demo user already exists",
         user: {
@@ -54,9 +95,30 @@ export async function POST() {
       }
     });
 
+    // Also create a Player record for this user
+    const player = await prisma.player.create({
+      data: {
+        id: uuidv4(),
+        userId: user.id,
+        fullName: "Demo Player",
+        age: 18,
+        height: 1.75,
+        position: "Midfielder",
+        highlightReels: JSON.stringify([]),
+        academyId: academy.id,
+        updatedAt: new Date()
+      }
+    });
+
     return NextResponse.json({
-      message: "Demo user created successfully",
-      user
+      message: "Demo user and player created successfully",
+      user,
+      player: {
+        id: player.id,
+        fullName: player.fullName,
+        age: player.age,
+        position: player.position
+      }
     });
   } catch (error) {
     console.error('Demo user creation error:', error);

@@ -1,7 +1,7 @@
 class AppConstants {
   // API Configuration
-  static const String baseUrl = 'https://your-nextjs-api.com/api';
-  static const String adminPanelUrl = 'https://your-admin-panel.com';
+  static const String baseUrl = 'https://quicktouch.vercel.app/api';
+  static const String adminPanelUrl = 'https://quicktouch.vercel.app';
   
   // Firebase Collections
   static const String usersCollection = 'users';
