@@ -15,7 +15,7 @@ function AuthenticatedLayout({ isSidebarOpen, toggleSidebar, children }) {
     const token = localStorage.getItem('token');
     if (!token) {
       console.log('No token found, redirecting to login');
-      router.push('/pages/login');
+      router.push('/login');
       setIsLoading(false);
       return;
     }
@@ -38,7 +38,7 @@ function AuthenticatedLayout({ isSidebarOpen, toggleSidebar, children }) {
         localStorage.removeItem('user');
         localStorage.removeItem('role');
         logout();
-        router.push('/pages/login');
+        router.push('/login');
       } finally {
         setIsLoading(false);
       }

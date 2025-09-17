@@ -56,20 +56,24 @@ export default function LoginPage() {
 
       if (data.message === 'Login successful') {
         console.log('Redirecting immediately based on role');
-        try {
-          if (data.user.role === 'admin') {
-            await router.replace('/pages/academy-dashboard');
-          } else if (data.user.role === 'super_admin') {
-            await router.replace('/pages/dashboard');
-          } else if (data.user.role === 'coach') {
-            await router.replace('/pages/dashboard');
-          } else {
-            await router.replace('/pages/dashboard');
-          }
-          console.log('Redirect completed');
-        } finally {
-          setIsLoading(false);
+        console.log('User role:', data.user.role);
+        
+        if (data.user.role === 'admin') {
+          console.log('Redirecting admin to academy-dashboard');
+          router.replace('/pages/academy-dashboard');
+        } else if (data.user.role === 'super_admin') {
+          console.log('Redirecting super_admin to dashboard');
+          router.replace('/pages/dashboard');
+        } else if (data.user.role === 'coach') {
+          console.log('Redirecting coach to dashboard');
+          router.replace('/pages/dashboard');
+        } else {
+          console.log('Redirecting other role to dashboard');
+          router.replace('/pages/dashboard');
         }
+        
+        setIsLoading(false);
+        console.log('Redirect initiated');
       } else {
         throw new Error(data.error || 'Unexpected response from server');
       }

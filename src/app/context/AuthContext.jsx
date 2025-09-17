@@ -21,7 +21,7 @@ export function AuthProvider({ children }) {
     } else {
       setUser(null);
       setRole(null);
-      router.push('/login');
+      // Don't auto-redirect here, let individual pages handle it
     }
   }, [router]);
 
