@@ -85,14 +85,11 @@ export default function Sidebar({ isOpen, toggleSidebar }) {
     // Academy Admin - Limited to their academy
     if (user.role === 'admin') {
       return [
-        { href: '/pages/academy-dashboard', label: 'Academy Dashboard', icon: LayoutDashboard },
-        { href: '/pages/players_management', label: 'Players', icon: Users },
-        { href: '/pages/event_management', label: 'Events & Matches', icon: Calendar },
-        { href: '/pages/messaging', label: 'Messaging', icon: MessageSquare },
+        { href: '/pages/academy-dashboard', label: 'Dashboard', icon: LayoutDashboard },
+        { href: '/pages/players_management', label: 'Player Management', icon: Users },
+        { href: '/pages/player-comparison', label: 'Player Comparison', icon: BarChart3 },
         { href: '/pages/ai-insights', label: 'AI Insights', icon: Brain },
-        { href: '/pages/advanced-stats', label: 'Advanced Stats', icon: Target },
-        { href: '/pages/training_programs', label: 'Training Programs', icon: Trophy },
-        { href: '/pages/attandance_management', label: 'Attendance', icon: UserCheck },
+        { href: '/pages/attandance_management', label: 'Attendance Management', icon: UserCheck },
       ];
     }
 
