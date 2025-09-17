@@ -7,11 +7,11 @@ class ApiService {
   factory ApiService() => _instance;
   ApiService._internal();
 
-  late Dio _dio;
+  Dio? _dio;
   String? _token;
   
-  // Base URL - Production API endpoint
-  static const String baseUrl = 'https://quicktouch.vercel.app/api';
+  // Base URL - Local development API endpoint
+  static const String baseUrl = 'http://localhost:3000/api';
   
   void initialize() {
     _dio = Dio(BaseOptions(
@@ -23,6 +23,8 @@ class ApiService {
         'Accept': 'application/json',
       },
     ));
+    
+    // Dio instance is now initialized
 
     // Add interceptors
     _dio.interceptors.add(InterceptorsWrapper(
@@ -65,7 +67,12 @@ class ApiService {
   // Authentication Methods
   Future<Map<String, dynamic>> login(String email, String password) async {
     try {
-      final response = await _dio.post('/login', data: {
+      // Ensure Dio is initialized
+      if (_dio == null) {
+        initialize();
+      }
+      
+      final response = await _dio!.post('/login', data: {
         'email': email,
         'password': password,
       });
@@ -112,6 +119,11 @@ class ApiService {
 
   Future<Map<String, dynamic>> register(Map<String, dynamic> userData) async {
     try {
+      // Ensure Dio is initialized
+      if (_dio == null) {
+        initialize();
+      }
+      
       // Transform data to match server expectations
       final cleanedData = {
         'fullName': '${userData['firstName']} ${userData['lastName']}', // Combine first and last name
@@ -125,20 +137,36 @@ class ApiService {
       
       print('📤 Sending registration data: $cleanedData');
       
-      final response = await _dio.post('/users', data: cleanedData);
+      final response = await _dio!.post('/users/test', data: cleanedData);
+      
+      // Handle successful registration
+      if (response.statusCode == 201) {
+        return {
+          'success': true,
+          'message': response.data['message'],
+          'user': response.data['user'],
+        };
+      }
+      
       return response.data;
     } on DioException catch (e) {
+      print('❌ DioException in register: ${e.response?.statusCode}');
+      print('❌ Error data: ${e.response?.data}');
+      
       if (e.response?.statusCode == 400) {
-        final errorMessage = e.response?.data?['message'] ?? 
-                           e.response?.data?['error'] ?? 
+        final errorMessage = e.response?.data?['error'] ?? 
+                           e.response?.data?['message'] ?? 
                            'Invalid registration data';
         throw Exception(errorMessage);
       } else if (e.response?.statusCode == 409) {
         throw Exception('User with this email already exists');
+      } else if (e.response?.statusCode == 500) {
+        throw Exception('Server error. Please try again later.');
       } else {
-        throw Exception('Registration error: ${e.response?.data?['message'] ?? e.message}');
+        throw Exception('Registration error: ${e.response?.data?['error'] ?? e.message}');
       }
     } catch (e) {
+      print('❌ General error in register: $e');
       throw Exception('Registration error: ${e.toString()}');
     }
   }
@@ -157,8 +185,8 @@ class ApiService {
   // Academy Management
   Future<List<dynamic>> getAcademies() async {
     try {
-      print('🔍 Fetching academies from: ${baseUrl}/academies');
-      final response = await _dio.get('/academies');
+      print('🔍 Fetching academies from: ${baseUrl}/academy_management');
+      final response = await _dio.get('/academy_management');
       print('✅ Academies response: ${response.data}');
       
       // Handle different response formats
@@ -180,14 +208,14 @@ class ApiService {
       
       // Return default academies if API fails
       return [
-        {'id': 'default', 'name': 'Quick Touch Academy'},
-        {'id': 'academy1', 'name': 'Elite Football Academy'},
-        {'id': 'academy2', 'name': 'Youth Development Center'},
+        {'id': 'academy-1', 'name': 'Quick Touch Academy - Main Campus'},
+        {'id': 'academy-2', 'name': 'Quick Touch Academy - Karachi Branch'},
+        {'id': 'academy-3', 'name': 'Quick Touch Academy - Islamabad Branch'},
       ];
     } catch (e) {
       print('❌ General error when fetching academies: $e');
       return [
-        {'id': 'default', 'name': 'Quick Touch Academy'},
+        {'id': 'academy-1', 'name': 'Quick Touch Academy - Main Campus'},
       ];
     }
   }
@@ -206,15 +234,6 @@ class ApiService {
     }
   }
 
-  // Academy Management
-  Future<List<dynamic>> getAcademies() async {
-    try {
-      final response = await _dio.get('/academies');
-      return response.data['academies'] ?? [];
-    } catch (e) {
-      throw Exception('Failed to fetch academies: ${e.toString()}');
-    }
-  }
 
   // Player Management
   Future<List<dynamic>> getPlayers({String? academyId, String? position, int? ageMin, int? ageMax}) async {

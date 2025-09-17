@@ -1,0 +1,19 @@
+# Gmail SMTP Configuration
+# Replace with your actual Gmail credentials
+EMAIL_USER="your-gmail@gmail.com"
+EMAIL_PASS="your-16-character-app-password"
+
+# JWT Secret for authentication
+JWT_SECRET="your-super-secret-jwt-key-for-development"
+
+# Database URL (if not already configured)
+DATABASE_URL="your-database-url"
+
+# Next.js Configuration
+NEXTAUTH_URL="http://localhost:3000"
+NEXTAUTH_SECRET="your-nextauth-secret"
+
+# App Configuration
+NODE_ENV="development"
+
+

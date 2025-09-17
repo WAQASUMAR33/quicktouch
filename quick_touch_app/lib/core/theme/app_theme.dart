@@ -23,6 +23,14 @@ class AppTheme {
   static const Color scoutColor = Color(0xFF10B981); // Green
   static const Color parentColor = Color(0xFFF59E0B); // Amber
 
+  // Additional Colors
+  static const Color charcoal = Color(0xFF1C2526); // Same as primaryColor
+  static const Color darkCharcoal = Color(0xFF0F1415); // Darker version
+  static const Color lightCharcoal = Color(0xFF2A3A3D); // Lighter version
+  static const Color accentGreen = Color(0xFF10B981); // Same as successColor
+  static const Color accentBlue = Color(0xFF3B82F6); // Same as playerColor
+  static const Color accentOrange = Color(0xFFF59E0B); // Same as warningColor
+
   static ThemeData get lightTheme {
     return ThemeData(
       useMaterial3: true,

@@ -5,12 +5,19 @@ import { v4 as uuidv4 } from "uuid";
 import nodemailer from "nodemailer";
 import jwt from 'jsonwebtoken';
 
+// Create email transporter with proper configuration
 const transporter = nodemailer.createTransport({
   service: 'gmail',
+  host: 'smtp.gmail.com',
+  port: 587,
+  secure: false, // true for 465, false for other ports
   auth: {
     user: process.env.EMAIL_USER,
     pass: process.env.EMAIL_PASS,
   },
+  tls: {
+    rejectUnauthorized: false
+  }
 });
 
 // Helper function to get user from JWT token
@@ -40,6 +47,27 @@ export async function POST(request) {
         { error: 'Missing required fields: fullName, email, password, role, academyId' },
         { status: 400 }
       );
+    }
+
+    // Check if academy exists, if not create a default one
+    let academy = await prisma.academy.findUnique({
+      where: { id: academyId }
+    });
+
+    if (!academy) {
+      // If academy doesn't exist, create a default one
+      academy = await prisma.academy.create({
+        data: {
+          id: academyId,
+          name: 'Quick Touch Academy',
+          location: 'Default Location',
+          description: 'Default academy for new users',
+          contactEmail: 'info@quicktouchacademy.com',
+          contactPhone: '+92-300-1234567',
+          adminIds: '',
+          createdAt: new Date(),
+        }
+      });
     }
 
     // Validate email format
@@ -110,27 +138,57 @@ export async function POST(request) {
       }
     });
 
-    // Send verification email
-    const verificationUrl = `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/users/verify?token=${verificationToken}`;
-    
-    const emailHtml = `
-      <div style="background-color: #1C2526; padding: 20px; color: #FFFFFF; font-family: Montserrat, sans-serif;">
-        <h2 style="color: #FFB300;">Welcome to Quick Touch Academy!</h2>
-        <p>Hi ${fullName},</p>
-        <p>Thank you for registering with Quick Touch Academy. Please verify your email address by clicking the link below:</p>
-        <a href="${verificationUrl}" style="background-color: #FFB300; color: #1C2526; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block; margin: 10px 0;">Verify Email</a>
-        <p>If the button doesn't work, copy and paste this link into your browser:</p>
-        <p style="color: #FFB300;">${verificationUrl}</p>
-        <p>Best regards,<br>Quick Touch Academy Team</p>
-      </div>
-    `;
+    // Send verification email (skip if email not configured)
+    try {
+      const verificationUrl = `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/users/verify?token=${verificationToken}`;
+      
+      const emailHtml = `
+        <div style="background-color: #1C2526; padding: 20px; color: #FFFFFF; font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <div style="text-align: center; margin-bottom: 30px;">
+            <h1 style="color: #FFB300; margin: 0;">Quick Touch Academy</h1>
+            <p style="color: #FFFFFF; margin: 5px 0;">Football Training Excellence</p>
+          </div>
+          
+          <h2 style="color: #FFB300;">Welcome to Quick Touch Academy!</h2>
+          <p>Hi ${fullName},</p>
+          <p>Thank you for registering with Quick Touch Academy. Please verify your email address by clicking the button below:</p>
+          
+          <div style="text-align: center; margin: 30px 0;">
+            <a href="${verificationUrl}" style="background-color: #FFB300; color: #1C2526; padding: 15px 30px; text-decoration: none; border-radius: 8px; display: inline-block; font-weight: bold; font-size: 16px;">Verify My Email Address</a>
+          </div>
+          
+          <p>If the button doesn't work, copy and paste this link into your browser:</p>
+          <div style="background-color: #333; padding: 15px; border-radius: 5px; word-break: break-all;">
+            <p style="color: #FFB300; margin: 0; font-family: monospace;">${verificationUrl}</p>
+          </div>
+          
+          <hr style="border: none; border-top: 1px solid #444; margin: 30px 0;">
+          
+          <p style="color: #CCCCCC; font-size: 14px;">
+            <strong>Account Details:</strong><br>
+            Email: ${email}<br>
+            Role: ${role}<br>
+            Academy: Quick Touch Academy
+          </p>
+          
+          <p style="color: #CCCCCC; font-size: 12px; text-align: center; margin-top: 30px;">
+            Best regards,<br>
+            <strong>Quick Touch Academy Team</strong>
+          </p>
+        </div>
+      `;
 
-    await transporter.sendMail({
-      from: process.env.EMAIL_USER,
-      to: email,
-      subject: 'Verify Your Email - Quick Touch Academy',
-      html: emailHtml,
-    });
+      await transporter.sendMail({
+        from: `"Quick Touch Academy" <${process.env.EMAIL_USER}>`,
+        to: email,
+        subject: 'Verify Your Email - Quick Touch Academy',
+        html: emailHtml,
+      });
+    } catch (emailError) {
+      console.log('Email service error:', emailError.message);
+      console.log('Please check your Gmail SMTP configuration in .env');
+      // Continue with user creation even if email fails
+    }
 
     return NextResponse.json(
       {

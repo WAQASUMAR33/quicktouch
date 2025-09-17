@@ -64,13 +64,23 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
       
       if (mounted) {
         if (success) {
-          AppRouter.goToDashboard(context);
+          // Show success message
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Registration successful! Please check your email to verify your account.'),
+              backgroundColor: Colors.green,
+              duration: Duration(seconds: 5),
+            ),
+          );
+          // Navigate to login screen instead of dashboard since email verification is required
+          AppRouter.goToLogin(context);
         } else {
           final authState = ref.read(authStateProvider);
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text('Registration failed: ${authState.error ?? 'Unknown error'}'),
               backgroundColor: AppTheme.errorColor,
+              duration: const Duration(seconds: 5),
             ),
           );
         }
@@ -505,5 +515,4 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
       ),
     );
   }
-}
 }

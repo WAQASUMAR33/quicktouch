@@ -1,0 +1,15 @@
+# Copy this content to .env file in your project root
+
+# Database Configuration
+DATABASE_URL="mysql://u889453186_quicktouch:QuickTouch@123@mysql-1273.quicktouchacademy.com:3306/u889453186_quicktouch"
+
+# JWT Configuration
+JWT_SECRET="your-super-secret-jwt-key-here-make-it-long-and-random"
+
+# Email Configuration (Gmail SMTP)
+EMAIL_USER="theitxprts@gmail.com"
+EMAIL_PASS="bxcz oyhi fcyx qcab"
+
+# Next.js Configuration
+NEXT_PUBLIC_BASE_URL="http://localhost:3000"
+

@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
+import { Shield } from 'lucide-react';
 export default function DashboardPage() {
   const [user, setUser] = useState(null);
   const [stats, setStats] = useState({
@@ -44,6 +45,19 @@ export default function DashboardPage() {
           throw new Error(userData.error || 'Failed to verify token');
         }
         setUser(userData.user);
+
+        // Redirect based on user role
+        if (userData.user.role === 'admin') {
+          router.push('/pages/academy-dashboard');
+          return;
+        }
+
+        // Only super admin should see this dashboard
+        if (userData.user.role !== 'super_admin') {
+          setError('Access denied. Super admin privileges required.');
+          setIsLoading(false);
+          return;
+        }
 
         // Fetch dashboard stats from multiple APIs
         const [setupResponse, playersResponse, eventsResponse] = await Promise.all([
@@ -132,11 +146,12 @@ export default function DashboardPage() {
               />
             </div>
             <div>
-              <h1 className="text-3xl font-bold mb-2">
-                Welcome to Quick Touch Academy
+              <h1 className="text-3xl font-bold mb-2 flex items-center">
+                <Shield className="w-8 h-8 mr-3" />
+                Admin Dashboard
               </h1>
               <p className="text-purple-100 text-lg">
-                Hello, {user?.fullName || user?.email}! Ready to manage your academy?
+                Hello, {user?.fullName || user?.email}! You have full system access.
               </p>
               <p className="text-purple-200 text-sm mt-1">
                 Role: <span className="font-semibold capitalize">{user?.role}</span>

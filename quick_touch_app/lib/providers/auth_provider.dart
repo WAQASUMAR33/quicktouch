@@ -84,14 +84,28 @@ class AuthNotifier extends StateNotifier<AuthState> {
     try {
       state = state.copyWith(isLoading: true, error: null);
       
+      // Initialize API service if needed
+      _apiService.initialize();
+      
       final response = await _apiService.register(userData);
       
-      // Create user object from response
-      final user = User.fromJson(response['user']);
-      
-      state = state.copyWith(user: user, isLoading: false);
-      return true;
+      // Check if registration was successful
+      if (response['success'] == true && response['user'] != null) {
+        // Create user object from response
+        final user = User.fromJson(response['user']);
+        
+        state = state.copyWith(user: user, isLoading: false);
+        return true;
+      } else {
+        // Handle case where user creation succeeded but no user data returned
+        state = state.copyWith(
+          error: response['message'] ?? 'Registration successful but user data not available',
+          isLoading: false
+        );
+        return false;
+      }
     } catch (e) {
+      print('Registration error: $e');
       state = state.copyWith(error: e.toString(), isLoading: false);
       return false;
     }

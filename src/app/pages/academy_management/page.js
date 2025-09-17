@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Building2, Plus, Edit, Trash2, Users, Calendar, Trophy, MapPin } from 'lucide-react';
+import { Building2, Plus, Edit, Trash2, Users, Calendar, Trophy, MapPin, User, Phone, CheckCircle, XCircle, Clock } from 'lucide-react';
 
 export default function AcademyManagementPage() {
   const [academies, setAcademies] = useState([]);
@@ -14,7 +14,10 @@ export default function AcademyManagementPage() {
     location: '',
     description: '',
     contactEmail: '',
-    contactPhone: ''
+    contactPhone: '',
+    contactPerson: '',
+    contactPersonPhone: '',
+    status: 'approved'
   });
 
   // Load academies on component mount
@@ -84,7 +87,10 @@ export default function AcademyManagementPage() {
         location: '',
         description: '',
         contactEmail: '',
-        contactPhone: ''
+        contactPhone: '',
+        contactPerson: '',
+        contactPersonPhone: '',
+        status: 'approved'
       });
       setEditingAcademy(null);
       setShowModal(false);
@@ -102,7 +108,10 @@ export default function AcademyManagementPage() {
       location: academy.location || '',
       description: academy.description || '',
       contactEmail: academy.contactEmail || '',
-      contactPhone: academy.contactPhone || ''
+      contactPhone: academy.contactPhone || '',
+      contactPerson: academy.contactPerson || '',
+      contactPersonPhone: academy.contactPersonPhone || '',
+      status: academy.status || 'approved'
     });
     setShowModal(true);
   };
@@ -141,7 +150,10 @@ export default function AcademyManagementPage() {
       location: '',
       description: '',
       contactEmail: '',
-      contactPhone: ''
+      contactPhone: '',
+      contactPerson: '',
+      contactPersonPhone: '',
+      status: 'approved'
     });
     setShowModal(true);
   };
@@ -154,7 +166,10 @@ export default function AcademyManagementPage() {
       location: '',
       description: '',
       contactEmail: '',
-      contactPhone: ''
+      contactPhone: '',
+      contactPerson: '',
+      contactPersonPhone: '',
+      status: 'approved'
     });
   };
 
@@ -214,6 +229,22 @@ export default function AcademyManagementPage() {
                     </p>
                   </div>
                 </div>
+                <div className="flex flex-col items-end space-y-2">
+                  {/* Status Badge */}
+                  <div className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                    academy.status === 'approved' 
+                      ? 'bg-green-100 text-green-800' 
+                      : academy.status === 'pending'
+                      ? 'bg-yellow-100 text-yellow-800'
+                      : 'bg-red-100 text-red-800'
+                  }`}>
+                    {academy.status === 'approved' && <CheckCircle className="w-3 h-3 mr-1" />}
+                    {academy.status === 'pending' && <Clock className="w-3 h-3 mr-1" />}
+                    {academy.status === 'rejected' && <XCircle className="w-3 h-3 mr-1" />}
+                    {academy.status || 'approved'}
+                  </div>
+                  
+                  {/* Action Buttons */}
                 <div className="flex space-x-2">
                   <button
                     onClick={() => handleEdit(academy)}
@@ -229,6 +260,7 @@ export default function AcademyManagementPage() {
                   >
                     <Trash2 className="w-4 h-4" />
                   </button>
+                  </div>
                 </div>
               </div>
 
@@ -238,43 +270,63 @@ export default function AcademyManagementPage() {
               )}
 
               {/* Academy Stats */}
-              <div className="grid grid-cols-3 gap-4 pt-4 border-t border-gray-100">
+              <div className="grid grid-cols-4 gap-4 pt-4 border-t border-gray-100">
                 <div className="text-center">
                   <div className="flex items-center justify-center w-8 h-8 bg-green-100 rounded-lg mx-auto mb-1">
                     <Users className="w-4 h-4 text-green-600" />
                   </div>
                   <p className="text-xs text-gray-500">Users</p>
-                  <p className="text-sm font-semibold text-gray-900">{academy.users?.length || 0}</p>
+                  <p className="text-sm font-semibold text-gray-900">{academy.User?.length || 0}</p>
+                </div>
+                <div className="text-center">
+                  <div className="flex items-center justify-center w-8 h-8 bg-blue-100 rounded-lg mx-auto mb-1">
+                    <Users className="w-4 h-4 text-blue-600" />
+                  </div>
+                  <p className="text-xs text-gray-500">Players</p>
+                  <p className="text-sm font-semibold text-gray-900">{academy.Player?.length || 0}</p>
                 </div>
                 <div className="text-center">
                   <div className="flex items-center justify-center w-8 h-8 bg-purple-100 rounded-lg mx-auto mb-1">
                     <Calendar className="w-4 h-4 text-purple-600" />
                   </div>
                   <p className="text-xs text-gray-500">Events</p>
-                  <p className="text-sm font-semibold text-gray-900">{academy.events?.length || 0}</p>
+                  <p className="text-sm font-semibold text-gray-900">{academy.Event?.length || 0}</p>
                 </div>
                 <div className="text-center">
                   <div className="flex items-center justify-center w-8 h-8 bg-orange-100 rounded-lg mx-auto mb-1">
                     <Trophy className="w-4 h-4 text-orange-600" />
                   </div>
                   <p className="text-xs text-gray-500">Matches</p>
-                  <p className="text-sm font-semibold text-gray-900">{academy.matches?.length || 0}</p>
+                  <p className="text-sm font-semibold text-gray-900">{academy.Match?.length || 0}</p>
                 </div>
               </div>
 
               {/* Contact Information */}
-              {(academy.contactEmail || academy.contactPhone) && (
+              {(academy.contactEmail || academy.contactPhone || academy.contactPerson || academy.contactPersonPhone) && (
                 <div className="mt-4 pt-4 border-t border-gray-100">
                   <h4 className="text-sm font-medium text-gray-900 mb-2">Contact Information</h4>
                   <div className="space-y-1">
                     {academy.contactEmail && (
-                      <p className="text-xs text-gray-600">
-                        <span className="font-medium">Email:</span> {academy.contactEmail}
+                      <p className="text-xs text-gray-600 flex items-center">
+                        <span className="font-medium mr-1">Email:</span> {academy.contactEmail}
                       </p>
                     )}
                     {academy.contactPhone && (
-                      <p className="text-xs text-gray-600">
-                        <span className="font-medium">Phone:</span> {academy.contactPhone}
+                      <p className="text-xs text-gray-600 flex items-center">
+                        <Phone className="w-3 h-3 mr-1" />
+                        <span className="font-medium mr-1">Phone:</span> {academy.contactPhone}
+                      </p>
+                    )}
+                    {academy.contactPerson && (
+                      <p className="text-xs text-gray-600 flex items-center">
+                        <User className="w-3 h-3 mr-1" />
+                        <span className="font-medium mr-1">Contact Person:</span> {academy.contactPerson}
+                      </p>
+                    )}
+                    {academy.contactPersonPhone && (
+                      <p className="text-xs text-gray-600 flex items-center">
+                        <Phone className="w-3 h-3 mr-1" />
+                        <span className="font-medium mr-1">Person Phone:</span> {academy.contactPersonPhone}
                       </p>
                     )}
                   </div>
@@ -303,16 +355,33 @@ export default function AcademyManagementPage() {
 
       {/* Modal */}
       {showModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
             <div className="p-6">
-              <h2 className="text-xl font-semibold text-gray-900 mb-4">
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-2xl font-semibold text-gray-900">
                 {editingAcademy ? 'Edit Academy' : 'Create New Academy'}
               </h2>
+                <button
+                  onClick={closeModal}
+                  className="text-gray-400 hover:text-gray-600 transition-colors"
+                >
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
               
-              <form onSubmit={handleSubmit} className="space-y-4">
+              <form onSubmit={handleSubmit} className="space-y-6">
+                {/* Basic Information Section */}
+                <div className="bg-gray-50 rounded-lg p-4">
+                  <h3 className="text-lg font-medium text-gray-900 mb-4 flex items-center">
+                    <Building2 className="w-5 h-5 mr-2 text-blue-600" />
+                    Basic Information
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
+                      <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">
                     Academy Name *
                   </label>
                   <input
@@ -322,12 +391,13 @@ export default function AcademyManagementPage() {
                     value={formData.name}
                     onChange={handleInputChange}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        placeholder="Enter academy name"
                     required
                   />
                 </div>
 
                 <div>
-                  <label htmlFor="location" className="block text-sm font-medium text-gray-700 mb-1">
+                      <label htmlFor="location" className="block text-sm font-medium text-gray-700 mb-2">
                     Location *
                   </label>
                   <input
@@ -337,12 +407,13 @@ export default function AcademyManagementPage() {
                     value={formData.location}
                     onChange={handleInputChange}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        placeholder="Enter academy location"
                     required
                   />
                 </div>
 
-                <div>
-                  <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-1">
+                    <div className="md:col-span-2">
+                      <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-2">
                     Description
                   </label>
                   <textarea
@@ -352,11 +423,21 @@ export default function AcademyManagementPage() {
                     onChange={handleInputChange}
                     rows={3}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        placeholder="Enter academy description"
                   />
+                    </div>
+                  </div>
                 </div>
 
+                {/* Contact Information Section */}
+                <div className="bg-gray-50 rounded-lg p-4">
+                  <h3 className="text-lg font-medium text-gray-900 mb-4 flex items-center">
+                    <Phone className="w-5 h-5 mr-2 text-green-600" />
+                    Contact Information
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label htmlFor="contactEmail" className="block text-sm font-medium text-gray-700 mb-1">
+                      <label htmlFor="contactEmail" className="block text-sm font-medium text-gray-700 mb-2">
                     Contact Email
                   </label>
                   <input
@@ -366,11 +447,12 @@ export default function AcademyManagementPage() {
                     value={formData.contactEmail}
                     onChange={handleInputChange}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        placeholder="Enter contact email"
                   />
                 </div>
 
                 <div>
-                  <label htmlFor="contactPhone" className="block text-sm font-medium text-gray-700 mb-1">
+                      <label htmlFor="contactPhone" className="block text-sm font-medium text-gray-700 mb-2">
                     Contact Phone
                   </label>
                   <input
@@ -380,22 +462,109 @@ export default function AcademyManagementPage() {
                     value={formData.contactPhone}
                     onChange={handleInputChange}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  />
+                        placeholder="Enter contact phone"
+                      />
+                    </div>
+
+                    <div>
+                      <label htmlFor="contactPerson" className="block text-sm font-medium text-gray-700 mb-2">
+                        Contact Person Name
+                      </label>
+                      <input
+                        type="text"
+                        id="contactPerson"
+                        name="contactPerson"
+                        value={formData.contactPerson}
+                        onChange={handleInputChange}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        placeholder="Enter contact person name"
+                      />
+                    </div>
+
+                    <div>
+                      <label htmlFor="contactPersonPhone" className="block text-sm font-medium text-gray-700 mb-2">
+                        Contact Person Phone
+                      </label>
+                      <input
+                        type="tel"
+                        id="contactPersonPhone"
+                        name="contactPersonPhone"
+                        value={formData.contactPersonPhone}
+                        onChange={handleInputChange}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        placeholder="Enter contact person phone"
+                      />
+                    </div>
+                  </div>
                 </div>
 
-                <div className="flex justify-end space-x-3 pt-4">
+                {/* Status Section */}
+                <div className="bg-gray-50 rounded-lg p-4">
+                  <h3 className="text-lg font-medium text-gray-900 mb-4 flex items-center">
+                    {formData.status === 'approved' && <CheckCircle className="w-5 h-5 mr-2 text-green-600" />}
+                    {formData.status === 'pending' && <Clock className="w-5 h-5 mr-2 text-yellow-600" />}
+                    {formData.status === 'rejected' && <XCircle className="w-5 h-5 mr-2 text-red-600" />}
+                    Academy Status
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label htmlFor="status" className="block text-sm font-medium text-gray-700 mb-2">
+                        Status
+                      </label>
+                      <select
+                        id="status"
+                        name="status"
+                        value={formData.status}
+                        onChange={handleInputChange}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      >
+                        <option value="pending">Pending</option>
+                        <option value="approved">Approved</option>
+                        <option value="rejected">Rejected</option>
+                      </select>
+                    </div>
+                    
+                    <div className="flex items-end">
+                      <div className={`inline-flex items-center px-3 py-2 rounded-lg text-sm font-medium ${
+                        formData.status === 'approved' 
+                          ? 'bg-green-100 text-green-800' 
+                          : formData.status === 'pending'
+                          ? 'bg-yellow-100 text-yellow-800'
+                          : 'bg-red-100 text-red-800'
+                      }`}>
+                        {formData.status === 'approved' && <CheckCircle className="w-4 h-4 mr-2" />}
+                        {formData.status === 'pending' && <Clock className="w-4 h-4 mr-2" />}
+                        {formData.status === 'rejected' && <XCircle className="w-4 h-4 mr-2" />}
+                        Current Status: {formData.status || 'approved'}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Form Actions */}
+                <div className="flex justify-end space-x-3 pt-6 border-t border-gray-200">
                   <button
                     type="button"
                     onClick={closeModal}
-                    className="px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+                    className="px-6 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors font-medium"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
-                    className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+                    className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors font-medium flex items-center"
                   >
-                    {editingAcademy ? 'Update Academy' : 'Create Academy'}
+                    {editingAcademy ? (
+                      <>
+                        <Edit className="w-4 h-4 mr-2" />
+                        Update Academy
+                      </>
+                    ) : (
+                      <>
+                        <Plus className="w-4 h-4 mr-2" />
+                        Create Academy
+                      </>
+                    )}
                   </button>
                 </div>
               </form>

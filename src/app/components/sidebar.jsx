@@ -3,6 +3,7 @@
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
+import { useState, useEffect } from 'react';
 import {
   ArrowLeftOnRectangleIcon,
 } from '@heroicons/react/24/outline';
@@ -20,10 +21,20 @@ import {
   FileText,
   Target,
   Building2,
+  Shield,
+  UserCog,
 } from 'lucide-react';
 
 export default function Sidebar({ isOpen, toggleSidebar }) {
   const router = useRouter();
+  const [user, setUser] = useState(null);
+
+  useEffect(() => {
+    const userData = localStorage.getItem('user');
+    if (userData) {
+      setUser(JSON.parse(userData));
+    }
+  }, []);
 
   const handleLogout = async () => {
     try {
@@ -49,24 +60,89 @@ export default function Sidebar({ isOpen, toggleSidebar }) {
     }
   };
 
-  // Academy-specific navigation items
-  const navItems = [
-    { href: '/pages/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-    { href: '/pages/players_management', label: 'Players', icon: Users },
-    { href: '/pages/event_management', label: 'Events & Matches', icon: Calendar },
-    { href: '/pages/messaging', label: 'Messaging', icon: MessageSquare },
-    { href: '/pages/player-comparison', label: 'Player Comparison', icon: BarChart3 },
-    { href: '/pages/ai-insights', label: 'AI Insights', icon: Brain },
-    { href: '/pages/advanced-stats', label: 'Advanced Stats', icon: Target },
-    { href: '/pages/training_programs', label: 'Training Programs', icon: Trophy },
-    { href: '/pages/attandance_management', label: 'Attendance', icon: UserCheck },
-    { href: '/pages/academy_management', label: 'Academy Management', icon: Building2 },
-    { href: '/pages/users', label: 'User Management', icon: Settings },
-  ];
+  // Role-based navigation items
+  const getNavItems = () => {
+    if (!user) return [];
+
+    // Super Admin - Full access to everything
+    if (user.role === 'super_admin') {
+      return [
+        { href: '/pages/dashboard', label: 'Admin Dashboard', icon: Shield },
+        { href: '/pages/academy_management', label: 'Academy Management', icon: Building2 },
+        { href: '/pages/admin-approvals', label: 'Academy Approvals', icon: UserCog },
+        { href: '/pages/players_management', label: 'All Players', icon: Users },
+        { href: '/pages/event_management', label: 'All Events', icon: Calendar },
+        { href: '/pages/users', label: 'User Management', icon: Settings },
+        { href: '/pages/messaging', label: 'Messaging', icon: MessageSquare },
+        { href: '/pages/player-comparison', label: 'Player Comparison', icon: BarChart3 },
+        { href: '/pages/ai-insights', label: 'AI Insights', icon: Brain },
+        { href: '/pages/advanced-stats', label: 'Advanced Stats', icon: Target },
+        { href: '/pages/training_programs', label: 'Training Programs', icon: Trophy },
+        { href: '/pages/attandance_management', label: 'Attendance', icon: UserCheck },
+      ];
+    }
+
+    // Academy Admin - Limited to their academy
+    if (user.role === 'admin') {
+      return [
+        { href: '/pages/academy-dashboard', label: 'Academy Dashboard', icon: LayoutDashboard },
+        { href: '/pages/players_management', label: 'Players', icon: Users },
+        { href: '/pages/event_management', label: 'Events & Matches', icon: Calendar },
+        { href: '/pages/messaging', label: 'Messaging', icon: MessageSquare },
+        { href: '/pages/ai-insights', label: 'AI Insights', icon: Brain },
+        { href: '/pages/advanced-stats', label: 'Advanced Stats', icon: Target },
+        { href: '/pages/training_programs', label: 'Training Programs', icon: Trophy },
+        { href: '/pages/attandance_management', label: 'Attendance', icon: UserCheck },
+      ];
+    }
+
+    // Coach - Limited access
+    if (user.role === 'coach') {
+      return [
+        { href: '/pages/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+        { href: '/pages/players_management', label: 'Players', icon: Users },
+        { href: '/pages/event_management', label: 'Events & Matches', icon: Calendar },
+        { href: '/pages/messaging', label: 'Messaging', icon: MessageSquare },
+        { href: '/pages/ai-insights', label: 'AI Insights', icon: Brain },
+        { href: '/pages/advanced-stats', label: 'Advanced Stats', icon: Target },
+        { href: '/pages/training_programs', label: 'Training Programs', icon: Trophy },
+        { href: '/pages/attandance_management', label: 'Attendance', icon: UserCheck },
+      ];
+    }
+
+    // Player - Very limited access
+    if (user.role === 'player') {
+      return [
+        { href: '/pages/dashboard', label: 'My Dashboard', icon: LayoutDashboard },
+        { href: '/pages/messaging', label: 'Messaging', icon: MessageSquare },
+        { href: '/pages/ai-insights', label: 'My AI Insights', icon: Brain },
+        { href: '/pages/advanced-stats', label: 'My Stats', icon: Target },
+      ];
+    }
+
+    // Scout - Limited access
+    if (user.role === 'scout') {
+      return [
+        { href: '/pages/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+        { href: '/pages/players_management', label: 'Players', icon: Users },
+        { href: '/pages/player-comparison', label: 'Player Comparison', icon: BarChart3 },
+        { href: '/pages/messaging', label: 'Messaging', icon: MessageSquare },
+        { href: '/pages/ai-insights', label: 'AI Insights', icon: Brain },
+        { href: '/pages/advanced-stats', label: 'Advanced Stats', icon: Target },
+      ];
+    }
+
+    // Default fallback
+    return [
+      { href: '/pages/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+    ];
+  };
+
+  const navItems = getNavItems();
 
   return (
     <div className="flex flex-col h-full">
-      {/* Header with Academy Info */}
+      {/* Header with Role-specific Info */}
       <div className="p-4 flex items-center justify-between border-b border-white/20">
         {isOpen && (
           <div className="text-sm">
@@ -82,7 +158,13 @@ export default function Sidebar({ isOpen, toggleSidebar }) {
               </div>
               <div>
                 <p className="font-semibold text-white">Quick Touch</p>
-                <p className="text-xs text-white/70">Academy</p>
+                <p className="text-xs text-white/70">
+                  {user?.role === 'super_admin' ? 'Super Admin' : 
+                   user?.role === 'admin' ? 'Academy Admin' :
+                   user?.role === 'coach' ? 'Coach' :
+                   user?.role === 'player' ? 'Player' :
+                   user?.role === 'scout' ? 'Scout' : 'User'}
+                </p>
               </div>
             </div>
           </div>

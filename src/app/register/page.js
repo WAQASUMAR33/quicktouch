@@ -4,9 +4,26 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
+import {
+  Building2,
+  User,
+  Mail,
+  Phone,
+  MapPin,
+  FileText,
+  Lock,
+  Eye,
+  EyeOff,
+  CheckCircle,
+  AlertCircle,
+  ArrowRight
+} from 'lucide-react';
 
 export default function RegisterPage() {
-  const [formData, setFormData] = useState({
+  const [activeTab, setActiveTab] = useState('user'); // 'user' or 'academy'
+  
+  // User signup form data
+  const [userFormData, setUserFormData] = useState({
     fullName: '',
     email: '',
     password: '',
@@ -15,6 +32,20 @@ export default function RegisterPage() {
     role: 'player',
     academyId: ''
   });
+
+  // Academy registration form data
+  const [academyFormData, setAcademyFormData] = useState({
+    academyName: '',
+    location: '',
+    description: '',
+    contactEmail: '',
+    contactPhone: '',
+    contactPerson: '',
+    contactPersonPhone: '',
+    password: '',
+    confirmPassword: ''
+  });
+
   const [academies, setAcademies] = useState([]);
   const [academiesLoading, setAcademiesLoading] = useState(true);
   const [academiesError, setAcademiesError] = useState('');
@@ -22,6 +53,9 @@ export default function RegisterPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [showAcademyPassword, setShowAcademyPassword] = useState(false);
+  const [showAcademyConfirmPassword, setShowAcademyConfirmPassword] = useState(false);
+  const [success, setSuccess] = useState(false);
   const router = useRouter();
 
   // Load academies on component mount
@@ -44,17 +78,17 @@ export default function RegisterPage() {
         // Fallback to test academies if API fails
         setAcademies([
           {
-            id: 'academy-1',
+            id: 'academy-main-campus',
             name: 'Quick Touch Academy - Main Campus',
             location: 'Lahore, Pakistan'
           },
           {
-            id: 'academy-2', 
+            id: 'academy-karachi-branch', 
             name: 'Quick Touch Academy - Karachi Branch',
             location: 'Karachi, Pakistan'
           },
           {
-            id: 'academy-3',
+            id: 'academy-islamabad-branch',
             name: 'Quick Touch Academy - Islamabad Branch', 
             location: 'Islamabad, Pakistan'
           }
@@ -68,40 +102,106 @@ export default function RegisterPage() {
     loadAcademies();
   }, []);
 
-  const handleInputChange = (e) => {
+  const handleUserInputChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
+    setUserFormData(prev => ({
       ...prev,
       [name]: value
     }));
   };
 
-  const handleSubmit = async (e) => {
+  const handleAcademyInputChange = (e) => {
+    const { name, value } = e.target;
+    setAcademyFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  const validateUserForm = () => {
+    const newErrors = {};
+
+    if (!userFormData.fullName.trim()) {
+      newErrors.fullName = 'Full name is required';
+    }
+
+    if (!userFormData.email.trim()) {
+      newErrors.email = 'Email is required';
+    } else if (!/\S+@\S+\.\S+/.test(userFormData.email)) {
+      newErrors.email = 'Please enter a valid email address';
+    }
+
+    if (!userFormData.password) {
+      newErrors.password = 'Password is required';
+    } else if (userFormData.password.length < 6) {
+      newErrors.password = 'Password must be at least 6 characters';
+    }
+
+    if (!userFormData.confirmPassword) {
+      newErrors.confirmPassword = 'Please confirm your password';
+    } else if (userFormData.password !== userFormData.confirmPassword) {
+      newErrors.confirmPassword = 'Passwords do not match';
+    }
+
+    if (!userFormData.academyId) {
+      newErrors.academyId = 'Please select an academy';
+    }
+
+    setError(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const validateAcademyForm = () => {
+    const newErrors = {};
+
+    if (!academyFormData.academyName.trim()) {
+      newErrors.academyName = 'Academy name is required';
+    }
+
+    if (!academyFormData.location.trim()) {
+      newErrors.location = 'Location is required';
+    }
+
+    if (!academyFormData.contactEmail.trim()) {
+      newErrors.contactEmail = 'Contact email is required';
+    } else if (!/\S+@\S+\.\S+/.test(academyFormData.contactEmail)) {
+      newErrors.contactEmail = 'Please enter a valid email address';
+    }
+
+    if (!academyFormData.contactPhone.trim()) {
+      newErrors.contactPhone = 'Contact phone is required';
+    }
+
+    if (!academyFormData.contactPerson.trim()) {
+      newErrors.contactPerson = 'Contact person name is required';
+    }
+
+    if (!academyFormData.contactPersonPhone.trim()) {
+      newErrors.contactPersonPhone = 'Contact person phone is required';
+    }
+
+    if (!academyFormData.password) {
+      newErrors.password = 'Password is required';
+    } else if (academyFormData.password.length < 6) {
+      newErrors.password = 'Password must be at least 6 characters';
+    }
+
+    if (!academyFormData.confirmPassword) {
+      newErrors.confirmPassword = 'Please confirm your password';
+    } else if (academyFormData.password !== academyFormData.confirmPassword) {
+      newErrors.confirmPassword = 'Passwords do not match';
+    }
+
+    setError(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleUserSubmit = async (e) => {
     e.preventDefault();
     setError('');
     setIsLoading(true);
 
-    // Validation
-    if (!formData.fullName || !formData.email || !formData.password || !formData.confirmPassword || !formData.academyId) {
-      setError('All fields are required');
-      setIsLoading(false);
-      return;
-    }
-
-    if (!/\S+@\S+\.\S+/.test(formData.email)) {
-      setError('Please enter a valid email address');
-      setIsLoading(false);
-      return;
-    }
-
-    if (formData.password.length < 6) {
-      setError('Password must be at least 6 characters long');
-      setIsLoading(false);
-      return;
-    }
-
-    if (formData.password !== formData.confirmPassword) {
-      setError('Passwords do not match');
+    if (!validateUserForm()) {
       setIsLoading(false);
       return;
     }
@@ -111,12 +211,12 @@ export default function RegisterPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          fullName: formData.fullName,
-          email: formData.email,
-          password: formData.password,
-          phone: formData.phone,
-          role: formData.role,
-          academyId: formData.academyId
+          fullName: userFormData.fullName,
+          email: userFormData.email,
+          password: userFormData.password,
+          phone: userFormData.phone,
+          role: userFormData.role,
+          academyId: userFormData.academyId
         }),
       });
 
@@ -137,6 +237,74 @@ export default function RegisterPage() {
     }
   };
 
+  const handleAcademySubmit = async (e) => {
+    e.preventDefault();
+    setError('');
+    setIsLoading(true);
+
+    if (!validateAcademyForm()) {
+      setIsLoading(false);
+      return;
+    }
+
+    try {
+      const response = await fetch('/api/academy-registration', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(academyFormData),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Academy registration failed');
+      }
+
+      // Registration successful
+      setError('');
+      setSuccess(true);
+    } catch (err) {
+      console.error('Academy registration error:', err.message);
+      setError(err.message);
+      setIsLoading(false);
+    }
+  };
+
+  if (success) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center p-4">
+        <div className="relative w-full max-w-lg">
+          <div className="backdrop-blur-xl bg-white/10 border border-white/20 rounded-3xl shadow-2xl p-8 text-center">
+            <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
+              <CheckCircle className="w-8 h-8 text-green-600" />
+            </div>
+            
+            <h2 className="text-2xl font-bold text-white mb-4">
+              Registration Submitted!
+            </h2>
+            
+            <p className="text-white/70 mb-6">
+              Your academy registration has been submitted successfully. Our admin team will review your application and get back to you soon.
+            </p>
+            
+            <div className="bg-blue-50/20 rounded-lg p-4 mb-6">
+              <p className="text-sm text-white/80">
+                <strong>What happens next:</strong><br />
+                1. Our admin team will review your application<br />
+                2. You'll receive an email with approval status<br />
+                3. Once approved, you can log in and access your academy dashboard
+              </p>
+            </div>
+            
+            <p className="text-sm text-white/50">
+              Thank you for your interest in joining Quick Touch Academy!
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center p-4">
       {/* Background Pattern */}
@@ -146,7 +314,7 @@ export default function RegisterPage() {
         }}></div>
       </div>
       
-      <div className="relative w-full max-w-lg">
+      <div className="relative w-full max-w-4xl">
         {/* Glass Card */}
         <div className="backdrop-blur-xl bg-white/10 border border-white/20 rounded-3xl shadow-2xl p-8">
           {/* Logo/Header */}
@@ -162,306 +330,511 @@ export default function RegisterPage() {
               />
             </div>
             <h1 className="text-3xl font-bold text-white mb-2">Join Quick Touch Academy</h1>
-            <p className="text-white/70">Create your academy account</p>
+            <p className="text-white/70">Create your account or register your academy</p>
+          </div>
+
+          {/* Tab Navigation */}
+          <div className="flex mb-8 bg-white/10 rounded-xl p-1">
+            <button
+              onClick={() => setActiveTab('user')}
+              className={`flex-1 py-3 px-4 rounded-lg font-medium transition-all duration-200 ${
+                activeTab === 'user'
+                  ? 'bg-white/20 text-white shadow-lg'
+                  : 'text-white/70 hover:text-white hover:bg-white/5'
+              }`}
+            >
+              <div className="flex items-center justify-center space-x-2">
+                <User className="w-5 h-5" />
+                <span>User Signup</span>
+              </div>
+            </button>
+            <button
+              onClick={() => setActiveTab('academy')}
+              className={`flex-1 py-3 px-4 rounded-lg font-medium transition-all duration-200 ${
+                activeTab === 'academy'
+                  ? 'bg-white/20 text-white shadow-lg'
+                  : 'text-white/70 hover:text-white hover:bg-white/5'
+              }`}
+            >
+              <div className="flex items-center justify-center space-x-2">
+                <Building2 className="w-5 h-5" />
+                <span>Academy Registration</span>
+              </div>
+            </button>
           </div>
 
           {/* Error Message */}
           {error && (
             <div className="mb-6 p-4 bg-red-500/20 border border-red-500/30 rounded-xl backdrop-blur-sm">
               <div className="flex items-center">
-                <svg className="w-5 h-5 text-red-400 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
+                <AlertCircle className="w-5 h-5 text-red-400 mr-3" />
                 <span className="text-red-300 text-sm">{error}</span>
               </div>
             </div>
           )}
 
-          {/* Registration Form */}
-          <form onSubmit={handleSubmit} className="space-y-5">
-            {/* Full Name Field */}
-            <div className="space-y-2">
-              <label htmlFor="fullName" className="block text-sm font-medium text-white/90">
-                Full Name
-              </label>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <svg className="h-5 w-5 text-white/50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                  </svg>
-                </div>
-                <input
-                  id="fullName"
-                  name="fullName"
-                  type="text"
-                  value={formData.fullName}
-                  onChange={handleInputChange}
-                  className="w-full pl-10 pr-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent backdrop-blur-sm transition-all duration-200"
-                  placeholder="Enter your full name"
-                  required
-                />
-              </div>
-            </div>
-
-            {/* Email Field */}
-            <div className="space-y-2">
-              <label htmlFor="email" className="block text-sm font-medium text-white/90">
-                Email Address
-              </label>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <svg className="h-5 w-5 text-white/50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 12a4 4 0 10-8 0 4 4 0 008 0zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9m4.5-1.206a8.959 8.959 0 01-4.5 1.207" />
-                  </svg>
-                </div>
-                <input
-                  id="email"
-                  name="email"
-                  type="email"
-                  value={formData.email}
-                  onChange={handleInputChange}
-                  className="w-full pl-10 pr-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent backdrop-blur-sm transition-all duration-200"
-                  placeholder="Enter your email"
-                  required
-                />
-              </div>
-            </div>
-
-            {/* Phone Field */}
-            <div className="space-y-2">
-              <label htmlFor="phone" className="block text-sm font-medium text-white/90">
-                Phone Number (Optional)
-              </label>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <svg className="h-5 w-5 text-white/50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
-                  </svg>
-                </div>
-                <input
-                  id="phone"
-                  name="phone"
-                  type="tel"
-                  value={formData.phone}
-                  onChange={handleInputChange}
-                  className="w-full pl-10 pr-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent backdrop-blur-sm transition-all duration-200"
-                  placeholder="Enter your phone number"
-                />
-              </div>
-            </div>
-
-            {/* Role Selection */}
-            <div className="space-y-2">
-              <label htmlFor="role" className="block text-sm font-medium text-white/90">
-                Role
-              </label>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <svg className="h-5 w-5 text-white/50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                  </svg>
-                </div>
-                <select
-                  id="role"
-                  name="role"
-                  value={formData.role}
-                  onChange={handleInputChange}
-                  className="w-full pl-10 pr-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent backdrop-blur-sm transition-all duration-200 appearance-none"
-                  required
-                >
-                  <option value="player" className="bg-slate-800 text-white">Player</option>
-                  <option value="coach" className="bg-slate-800 text-white">Coach</option>
-                  <option value="scout" className="bg-slate-800 text-white">Scout</option>
-                </select>
-                <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
-                  <svg className="h-5 w-5 text-white/50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                  </svg>
-                </div>
-              </div>
-            </div>
-
-            {/* Academy Selection */}
-            <div className="space-y-2">
-              <label htmlFor="academyId" className="block text-sm font-medium text-white/90">
-                Academy *
-              </label>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <svg className="h-5 w-5 text-white/50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                  </svg>
-                </div>
-                {academiesLoading ? (
-                  <div className="w-full pl-10 pr-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white/50 flex items-center">
-                    <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white/50" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                    Loading academies...
+          {/* User Signup Form */}
+          {activeTab === 'user' && (
+            <form onSubmit={handleUserSubmit} className="space-y-5">
+              {/* Full Name Field */}
+              <div className="space-y-2">
+                <label htmlFor="fullName" className="block text-sm font-medium text-white/90">
+                  Full Name
+                </label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <User className="h-5 w-5 text-white/50" />
                   </div>
-                ) : academiesError ? (
-                  <div className="space-y-2">
-                    <div className="w-full pl-10 pr-4 py-3 bg-red-500/20 border border-red-500/30 rounded-xl text-red-300 flex items-center">
-                      <svg className="h-5 w-5 text-red-400 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
-                      Failed to load academies
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => window.location.reload()}
-                      className="text-sm text-purple-300 hover:text-purple-200 transition-colors"
-                    >
-                      Retry
-                    </button>
+                  <input
+                    id="fullName"
+                    name="fullName"
+                    type="text"
+                    value={userFormData.fullName}
+                    onChange={handleUserInputChange}
+                    className="w-full pl-10 pr-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent backdrop-blur-sm transition-all duration-200"
+                    placeholder="Enter your full name"
+                    required
+                  />
+                </div>
+              </div>
+
+              {/* Email Field */}
+              <div className="space-y-2">
+                <label htmlFor="email" className="block text-sm font-medium text-white/90">
+                  Email Address
+                </label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <Mail className="h-5 w-5 text-white/50" />
                   </div>
-                ) : (
+                  <input
+                    id="email"
+                    name="email"
+                    type="email"
+                    value={userFormData.email}
+                    onChange={handleUserInputChange}
+                    className="w-full pl-10 pr-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent backdrop-blur-sm transition-all duration-200"
+                    placeholder="Enter your email"
+                    required
+                  />
+                </div>
+              </div>
+
+              {/* Phone Field */}
+              <div className="space-y-2">
+                <label htmlFor="phone" className="block text-sm font-medium text-white/90">
+                  Phone Number (Optional)
+                </label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <Phone className="h-5 w-5 text-white/50" />
+                  </div>
+                  <input
+                    id="phone"
+                    name="phone"
+                    type="tel"
+                    value={userFormData.phone}
+                    onChange={handleUserInputChange}
+                    className="w-full pl-10 pr-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent backdrop-blur-sm transition-all duration-200"
+                    placeholder="Enter your phone number"
+                  />
+                </div>
+              </div>
+
+              {/* Role Selection */}
+              <div className="space-y-2">
+                <label htmlFor="role" className="block text-sm font-medium text-white/90">
+                  Role
+                </label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <User className="h-5 w-5 text-white/50" />
+                  </div>
                   <select
-                    id="academyId"
-                    name="academyId"
-                    value={formData.academyId}
-                    onChange={handleInputChange}
+                    id="role"
+                    name="role"
+                    value={userFormData.role}
+                    onChange={handleUserInputChange}
                     className="w-full pl-10 pr-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent backdrop-blur-sm transition-all duration-200 appearance-none"
                     required
                   >
-                    <option value="" className="bg-slate-800 text-white">Select an academy</option>
-                    {academies.map((academy) => (
-                      <option key={academy.id} value={academy.id} className="bg-slate-800 text-white">
-                        {academy.name}
-                      </option>
-                    ))}
+                    <option value="player" className="bg-slate-800 text-white">Player</option>
+                    <option value="coach" className="bg-slate-800 text-white">Coach</option>
+                    <option value="scout" className="bg-slate-800 text-white">Scout</option>
                   </select>
+                </div>
+              </div>
+
+              {/* Academy Selection */}
+              <div className="space-y-2">
+                <label htmlFor="academyId" className="block text-sm font-medium text-white/90">
+                  Academy *
+                </label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <Building2 className="h-5 w-5 text-white/50" />
+                  </div>
+                  {academiesLoading ? (
+                    <div className="w-full pl-10 pr-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white/50 flex items-center">
+                      <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white/50" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      Loading academies...
+                    </div>
+                  ) : (
+                    <select
+                      id="academyId"
+                      name="academyId"
+                      value={userFormData.academyId}
+                      onChange={handleUserInputChange}
+                      className="w-full pl-10 pr-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent backdrop-blur-sm transition-all duration-200 appearance-none"
+                      required
+                    >
+                      <option value="" className="bg-slate-800 text-white">Select an academy</option>
+                      {academies.map((academy) => (
+                        <option key={academy.id} value={academy.id} className="bg-slate-800 text-white">
+                          {academy.name}
+                        </option>
+                      ))}
+                    </select>
+                  )}
+                </div>
+              </div>
+
+              {/* Password Field */}
+              <div className="space-y-2">
+                <label htmlFor="password" className="block text-sm font-medium text-white/90">
+                  Password
+                </label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <Lock className="h-5 w-5 text-white/50" />
+                  </div>
+                  <input
+                    id="password"
+                    name="password"
+                    type={showPassword ? "text" : "password"}
+                    value={userFormData.password}
+                    onChange={handleUserInputChange}
+                    className="w-full pl-10 pr-12 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent backdrop-blur-sm transition-all duration-200"
+                    placeholder="Create a password"
+                    required
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                  >
+                    {showPassword ? (
+                      <EyeOff className="h-5 w-5 text-white/50 hover:text-white/70 transition-colors" />
+                    ) : (
+                      <Eye className="h-5 w-5 text-white/50 hover:text-white/70 transition-colors" />
+                    )}
+                  </button>
+                </div>
+              </div>
+
+              {/* Confirm Password Field */}
+              <div className="space-y-2">
+                <label htmlFor="confirmPassword" className="block text-sm font-medium text-white/90">
+                  Confirm Password
+                </label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <Lock className="h-5 w-5 text-white/50" />
+                  </div>
+                  <input
+                    id="confirmPassword"
+                    name="confirmPassword"
+                    type={showConfirmPassword ? "text" : "password"}
+                    value={userFormData.confirmPassword}
+                    onChange={handleUserInputChange}
+                    className="w-full pl-10 pr-12 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent backdrop-blur-sm transition-all duration-200"
+                    placeholder="Confirm your password"
+                    required
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                  >
+                    {showConfirmPassword ? (
+                      <EyeOff className="h-5 w-5 text-white/50 hover:text-white/70 transition-colors" />
+                    ) : (
+                      <Eye className="h-5 w-5 text-white/50 hover:text-white/70 transition-colors" />
+                    )}
+                  </button>
+                </div>
+              </div>
+
+              {/* Register Button */}
+              <button
+                type="submit"
+                disabled={isLoading}
+                className={`w-full py-3 px-4 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-semibold rounded-xl hover:from-purple-700 hover:to-pink-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 focus:ring-offset-transparent transform hover:scale-[1.02] transition-all duration-200 shadow-lg ${
+                  isLoading ? 'opacity-50 cursor-not-allowed transform-none' : ''
+                }`}
+              >
+                {isLoading ? (
+                  <div className="flex items-center justify-center">
+                    <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Creating account...
+                  </div>
+                ) : (
+                  'Create Account'
                 )}
-                <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
-                  <svg className="h-5 w-5 text-white/50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                  </svg>
+              </button>
+            </form>
+          )}
+
+          {/* Academy Registration Form */}
+          {activeTab === 'academy' && (
+            <form onSubmit={handleAcademySubmit} className="space-y-5">
+              {/* Academy Name Field */}
+              <div className="space-y-2">
+                <label htmlFor="academyName" className="block text-sm font-medium text-white/90">
+                  Academy Name *
+                </label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <Building2 className="h-5 w-5 text-white/50" />
+                  </div>
+                  <input
+                    id="academyName"
+                    name="academyName"
+                    type="text"
+                    value={academyFormData.academyName}
+                    onChange={handleAcademyInputChange}
+                    className="w-full pl-10 pr-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent backdrop-blur-sm transition-all duration-200"
+                    placeholder="Enter academy name"
+                    required
+                  />
                 </div>
               </div>
-            </div>
 
-            {/* Password Field */}
-            <div className="space-y-2">
-              <label htmlFor="password" className="block text-sm font-medium text-white/90">
-                Password
-              </label>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <svg className="h-5 w-5 text-white/50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                  </svg>
+              {/* Location Field */}
+              <div className="space-y-2">
+                <label htmlFor="location" className="block text-sm font-medium text-white/90">
+                  Location *
+                </label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <MapPin className="h-5 w-5 text-white/50" />
+                  </div>
+                  <input
+                    id="location"
+                    name="location"
+                    type="text"
+                    value={academyFormData.location}
+                    onChange={handleAcademyInputChange}
+                    className="w-full pl-10 pr-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent backdrop-blur-sm transition-all duration-200"
+                    placeholder="Enter academy location"
+                    required
+                  />
                 </div>
-                <input
-                  id="password"
-                  name="password"
-                  type={showPassword ? "text" : "password"}
-                  value={formData.password}
-                  onChange={handleInputChange}
-                  className="w-full pl-10 pr-12 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent backdrop-blur-sm transition-all duration-200"
-                  placeholder="Create a password"
-                  required
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute inset-y-0 right-0 pr-3 flex items-center"
-                >
-                  {showPassword ? (
-                    <svg className="h-5 w-5 text-white/50 hover:text-white/70 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L3 3m6.878 6.878L21 21" />
-                    </svg>
-                  ) : (
-                    <svg className="h-5 w-5 text-white/50 hover:text-white/70 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                    </svg>
-                  )}
-                </button>
               </div>
-            </div>
 
-            {/* Confirm Password Field */}
-            <div className="space-y-2">
-              <label htmlFor="confirmPassword" className="block text-sm font-medium text-white/90">
-                Confirm Password
-              </label>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <svg className="h-5 w-5 text-white/50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
+              {/* Description Field */}
+              <div className="space-y-2">
+                <label htmlFor="description" className="block text-sm font-medium text-white/90">
+                  Description
+                </label>
+                <div className="relative">
+                  <div className="absolute top-3 left-3 flex items-start pointer-events-none">
+                    <FileText className="h-5 w-5 text-white/50" />
+                  </div>
+                  <textarea
+                    id="description"
+                    name="description"
+                    value={academyFormData.description}
+                    onChange={handleAcademyInputChange}
+                    rows={3}
+                    className="w-full pl-10 pr-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent backdrop-blur-sm transition-all duration-200 resize-none"
+                    placeholder="Enter academy description"
+                  />
                 </div>
-                <input
-                  id="confirmPassword"
-                  name="confirmPassword"
-                  type={showConfirmPassword ? "text" : "password"}
-                  value={formData.confirmPassword}
-                  onChange={handleInputChange}
-                  className="w-full pl-10 pr-12 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent backdrop-blur-sm transition-all duration-200"
-                  placeholder="Confirm your password"
-                  required
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                  className="absolute inset-y-0 right-0 pr-3 flex items-center"
-                >
-                  {showConfirmPassword ? (
-                    <svg className="h-5 w-5 text-white/50 hover:text-white/70 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L3 3m6.878 6.878L21 21" />
-                    </svg>
-                  ) : (
-                    <svg className="h-5 w-5 text-white/50 hover:text-white/70 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                    </svg>
-                  )}
-                </button>
               </div>
-            </div>
 
-            {/* Terms and Conditions */}
-            <div className="flex items-start">
-              <input
-                type="checkbox"
-                id="terms"
-                className="w-4 h-4 text-purple-600 bg-white/10 border-white/20 rounded focus:ring-purple-500 focus:ring-2 mt-1"
-                required
-              />
-              <label htmlFor="terms" className="ml-2 text-sm text-white/70">
-                I agree to the{' '}
-                <Link href="/terms" className="text-purple-300 hover:text-purple-200 transition-colors">
-                  Terms of Service
-                </Link>{' '}
-                and{' '}
-                <Link href="/privacy" className="text-purple-300 hover:text-purple-200 transition-colors">
-                  Privacy Policy
-                </Link>
-              </label>
-            </div>
-
-            {/* Register Button */}
-            <button
-              type="submit"
-              disabled={isLoading}
-              className={`w-full py-3 px-4 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-semibold rounded-xl hover:from-purple-700 hover:to-pink-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 focus:ring-offset-transparent transform hover:scale-[1.02] transition-all duration-200 shadow-lg ${
-                isLoading ? 'opacity-50 cursor-not-allowed transform-none' : ''
-              }`}
-            >
-              {isLoading ? (
-                <div className="flex items-center justify-center">
-                  <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
-                  Creating account...
+              {/* Contact Email Field */}
+              <div className="space-y-2">
+                <label htmlFor="contactEmail" className="block text-sm font-medium text-white/90">
+                  Contact Email *
+                </label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <Mail className="h-5 w-5 text-white/50" />
+                  </div>
+                  <input
+                    id="contactEmail"
+                    name="contactEmail"
+                    type="email"
+                    value={academyFormData.contactEmail}
+                    onChange={handleAcademyInputChange}
+                    className="w-full pl-10 pr-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent backdrop-blur-sm transition-all duration-200"
+                    placeholder="Enter contact email"
+                    required
+                  />
                 </div>
-              ) : (
-                'Create Account'
-              )}
-            </button>
-          </form>
+              </div>
+
+              {/* Contact Phone Field */}
+              <div className="space-y-2">
+                <label htmlFor="contactPhone" className="block text-sm font-medium text-white/90">
+                  Contact Phone *
+                </label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <Phone className="h-5 w-5 text-white/50" />
+                  </div>
+                  <input
+                    id="contactPhone"
+                    name="contactPhone"
+                    type="tel"
+                    value={academyFormData.contactPhone}
+                    onChange={handleAcademyInputChange}
+                    className="w-full pl-10 pr-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent backdrop-blur-sm transition-all duration-200"
+                    placeholder="+92-300-1234567"
+                    required
+                  />
+                </div>
+              </div>
+
+              {/* Contact Person Field */}
+              <div className="space-y-2">
+                <label htmlFor="contactPerson" className="block text-sm font-medium text-white/90">
+                  Contact Person Name *
+                </label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <User className="h-5 w-5 text-white/50" />
+                  </div>
+                  <input
+                    id="contactPerson"
+                    name="contactPerson"
+                    type="text"
+                    value={academyFormData.contactPerson}
+                    onChange={handleAcademyInputChange}
+                    className="w-full pl-10 pr-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent backdrop-blur-sm transition-all duration-200"
+                    placeholder="Enter contact person name"
+                    required
+                  />
+                </div>
+              </div>
+
+              {/* Contact Person Phone Field */}
+              <div className="space-y-2">
+                <label htmlFor="contactPersonPhone" className="block text-sm font-medium text-white/90">
+                  Contact Person Phone *
+                </label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <Phone className="h-5 w-5 text-white/50" />
+                  </div>
+                  <input
+                    id="contactPersonPhone"
+                    name="contactPersonPhone"
+                    type="tel"
+                    value={academyFormData.contactPersonPhone}
+                    onChange={handleAcademyInputChange}
+                    className="w-full pl-10 pr-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent backdrop-blur-sm transition-all duration-200"
+                    placeholder="+92-300-1234567"
+                    required
+                  />
+                </div>
+              </div>
+
+              {/* Password Field */}
+              <div className="space-y-2">
+                <label htmlFor="academyPassword" className="block text-sm font-medium text-white/90">
+                  Password *
+                </label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <Lock className="h-5 w-5 text-white/50" />
+                  </div>
+                  <input
+                    id="academyPassword"
+                    name="password"
+                    type={showAcademyPassword ? "text" : "password"}
+                    value={academyFormData.password}
+                    onChange={handleAcademyInputChange}
+                    className="w-full pl-10 pr-12 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent backdrop-blur-sm transition-all duration-200"
+                    placeholder="Enter password"
+                    required
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowAcademyPassword(!showAcademyPassword)}
+                    className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                  >
+                    {showAcademyPassword ? (
+                      <EyeOff className="h-5 w-5 text-white/50 hover:text-white/70 transition-colors" />
+                    ) : (
+                      <Eye className="h-5 w-5 text-white/50 hover:text-white/70 transition-colors" />
+                    )}
+                  </button>
+                </div>
+              </div>
+
+              {/* Confirm Password Field */}
+              <div className="space-y-2">
+                <label htmlFor="academyConfirmPassword" className="block text-sm font-medium text-white/90">
+                  Confirm Password *
+                </label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <Lock className="h-5 w-5 text-white/50" />
+                  </div>
+                  <input
+                    id="academyConfirmPassword"
+                    name="confirmPassword"
+                    type={showAcademyConfirmPassword ? "text" : "password"}
+                    value={academyFormData.confirmPassword}
+                    onChange={handleAcademyInputChange}
+                    className="w-full pl-10 pr-12 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent backdrop-blur-sm transition-all duration-200"
+                    placeholder="Confirm password"
+                    required
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowAcademyConfirmPassword(!showAcademyConfirmPassword)}
+                    className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                  >
+                    {showAcademyConfirmPassword ? (
+                      <EyeOff className="h-5 w-5 text-white/50 hover:text-white/70 transition-colors" />
+                    ) : (
+                      <Eye className="h-5 w-5 text-white/50 hover:text-white/70 transition-colors" />
+                    )}
+                  </button>
+                </div>
+              </div>
+
+              {/* Register Button */}
+              <button
+                type="submit"
+                disabled={isLoading}
+                className={`w-full py-3 px-4 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-semibold rounded-xl hover:from-purple-700 hover:to-pink-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 focus:ring-offset-transparent transform hover:scale-[1.02] transition-all duration-200 shadow-lg ${
+                  isLoading ? 'opacity-50 cursor-not-allowed transform-none' : ''
+                }`}
+              >
+                {isLoading ? (
+                  <div className="flex items-center justify-center">
+                    <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Submitting registration...
+                  </div>
+                ) : (
+                  'Submit Academy Registration'
+                )}
+              </button>
+            </form>
+          )}
 
           {/* Sign In Link */}
           <div className="mt-6 text-center">

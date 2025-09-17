@@ -5,18 +5,90 @@ import { NextResponse } from "next/server";
 // GET: Retrieve all academies
 export async function GET(request) {
   try {
-    const academies = await prisma.academy.findMany({
-      include: {
-        users: { select: { id: true, fullName: true, email: true, role: true } },
-        players: { select: { id: true, fullName: true, position: true } },
-        matches: { select: { id: true, title: true, date: true } },
-        events: { select: { id: true, title: true, date: true } },
-        trainingPlans: { select: { id: true, title: true, date: true } },
-      },
-    });
+    // Use raw query to get all fields including the new ones we added
+    const academies = await prisma.$queryRaw`
+      SELECT id, name, location, description, contactEmail, contactPhone, 
+             contactPerson, contactPersonPhone, adminPassword, status, 
+             adminIds, createdAt, updatedAt
+      FROM Academy 
+      ORDER BY createdAt DESC
+    `;
+
+    // Get related data for each academy
+    const academiesWithRelations = await Promise.all(
+      academies.map(async (academy) => {
+        // Get users for this academy
+        const users = await prisma.user.findMany({
+          where: { academyId: academy.id },
+          select: {
+            id: true,
+            fullName: true,
+            email: true,
+            role: true,
+            createdAt: true
+          }
+        });
+
+        // Get players for this academy
+        const players = await prisma.player.findMany({
+          where: { academyId: academy.id },
+          select: {
+            id: true,
+            fullName: true,
+            position: true,
+            age: true,
+            createdAt: true
+          }
+        });
+
+        // Get events for this academy
+        const events = await prisma.event.findMany({
+          where: { academyId: academy.id },
+          select: {
+            id: true,
+            title: true,
+            date: true,
+            type: true,
+            createdAt: true
+          }
+        });
+
+        // Get matches for this academy
+        const matches = await prisma.match.findMany({
+          where: { academyId: academy.id },
+          select: {
+            id: true,
+            title: true,
+            date: true,
+            type: true,
+            createdAt: true
+          }
+        });
+
+        // Get training plans for this academy
+        const trainingPlans = await prisma.trainingPlan.findMany({
+          where: { academyId: academy.id },
+          select: {
+            id: true,
+            title: true,
+            date: true,
+            createdAt: true
+          }
+        });
+
+        return {
+          ...academy,
+          User: users,
+          Player: players,
+          Event: events,
+          Match: matches,
+          TrainingPlan: trainingPlans
+        };
+      })
+    );
 
     return NextResponse.json(
-      { message: 'Academies retrieved successfully', academies },
+      { message: 'Academies retrieved successfully', academies: academiesWithRelations },
       { status: 200 }
     );
   } catch (error) {
@@ -25,43 +97,52 @@ export async function GET(request) {
     // Return fallback academies if database is not available
     const fallbackAcademies = [
       {
-        id: 'academy-1',
+        id: 'academy-main-campus',
         name: 'Quick Touch Academy - Main Campus',
         location: 'Lahore, Pakistan',
         description: 'Main campus of Quick Touch Academy with state-of-the-art facilities',
         contactEmail: 'info@quicktouchacademy.com',
         contactPhone: '+92-300-1234567',
-        users: [],
-        players: [],
-        matches: [],
-        events: [],
-        trainingPlans: []
+        adminIds: '[]',
+        createdAt: new Date().toISOString(),
+        updatedAt: null,
+        User: [],
+        Player: [],
+        Match: [],
+        Event: [],
+        TrainingPlan: []
       },
       {
-        id: 'academy-2',
+        id: 'academy-karachi-branch',
         name: 'Quick Touch Academy - Karachi Branch',
         location: 'Karachi, Pakistan',
         description: 'Karachi branch offering comprehensive football training programs',
         contactEmail: 'karachi@quicktouchacademy.com',
         contactPhone: '+92-21-1234567',
-        users: [],
-        players: [],
-        matches: [],
-        events: [],
-        trainingPlans: []
+        adminIds: '[]',
+        createdAt: new Date().toISOString(),
+        updatedAt: null,
+        User: [],
+        Player: [],
+        Match: [],
+        Event: [],
+        TrainingPlan: []
       },
       {
-        id: 'academy-3',
+        id: 'academy-islamabad-branch',
         name: 'Quick Touch Academy - Islamabad Branch',
         location: 'Islamabad, Pakistan',
         description: 'Islamabad branch with modern training facilities and experienced coaches',
         contactEmail: 'islamabad@quicktouchacademy.com',
         contactPhone: '+92-51-1234567',
-        users: [],
-        players: [],
-        matches: [],
-        events: [],
-        trainingPlans: []
+        adminIds: '[]',
+        createdAt: new Date().toISOString(),
+        updatedAt: null,
+        User: [],
+        Player: [],
+        Match: [],
+        Event: [],
+        TrainingPlan: []
       }
     ];
 
@@ -81,7 +162,7 @@ export async function GET(request) {
 // POST: Create a new academy
 export async function POST(request) {
   try {
-    const { name, location, description, contactEmail, contactPhone } = await request.json();
+    const { name, location, description, contactEmail, contactPhone, contactPerson, contactPersonPhone, status, adminIds } = await request.json();
    
     // Validate input
     if (!name || !location) {
@@ -91,18 +172,36 @@ export async function POST(request) {
       );
     }
 
-    // Create academy
-    const academy = await prisma.academy.create({
-      data: {
-        id: crypto.randomUUID(),
-        name,
-        location,
-        description: description || null,
-        contactEmail: contactEmail || null,
-        contactPhone: contactPhone || null,
-        createdAt: new Date(),
-      },
-    });
+    // Create academy with all required fields including new ones
+    const academyId = crypto.randomUUID();
+    
+    // Use raw SQL to insert with all new fields
+    await prisma.$executeRaw`
+      INSERT INTO Academy (id, name, location, description, contactEmail, contactPhone, 
+                          contactPerson, contactPersonPhone, adminPassword, status, adminIds, createdAt)
+      VALUES (${academyId}, ${name}, ${location}, ${description || null}, 
+              ${contactEmail || null}, ${contactPhone || null}, 
+              ${contactPerson || null}, ${contactPersonPhone || null}, 
+              ${null}, ${status || 'approved'}, ${adminIds || '[]'}, NOW())
+    `;
+
+    // Get the created academy with all fields
+    const academyData = await prisma.$queryRaw`
+      SELECT id, name, location, description, contactEmail, contactPhone, 
+             contactPerson, contactPersonPhone, adminPassword, status, 
+             adminIds, createdAt, updatedAt
+      FROM Academy 
+      WHERE id = ${academyId}
+    `;
+
+    const academy = academyData[0];
+
+    // Add empty relations for new academy
+    academy.User = [];
+    academy.Player = [];
+    academy.Event = [];
+    academy.Match = [];
+    academy.TrainingPlan = [];
 
     return NextResponse.json(
       { message: 'Academy created successfully', academy },
