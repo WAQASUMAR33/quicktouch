@@ -173,9 +173,9 @@ export default function LocalStorageTestPage() {
       <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
         <h2 className="text-yellow-800 font-bold mb-3">Instructions</h2>
         <ol className="list-decimal list-inside space-y-2 text-yellow-700">
-          <li>Click "Test Login" to login and store data in localStorage</li>
-          <li>Check if data is stored correctly in the "Current State" section</li>
-          <li>Click "Test Token Verification" to verify the token</li>
+          <li>Click &quot;Test Login&quot; to login and store data in localStorage</li>
+          <li>Check if data is stored correctly in the &quot;Current State&quot; section</li>
+          <li>Click &quot;Test Token Verification&quot; to verify the token</li>
           <li>Check browser console for detailed logs</li>
           <li>If everything works, try accessing the dashboard</li>
         </ol>
