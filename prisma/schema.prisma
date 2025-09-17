@@ -21,7 +21,8 @@ model Academy {
   Match        Match[]
   Player       Player[]
   TrainingPlan TrainingPlan[]
-  User         User[]}
+  User         User[]
+}
 
 model Attendance {
   id        String   @id
