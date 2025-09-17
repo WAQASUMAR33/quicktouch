@@ -18,9 +18,16 @@ export default function DashboardPage() {
   const router = useRouter();
 
   useEffect(() => {
+    // Check if we're on the client side
+    if (typeof window === 'undefined') {
+      return;
+    }
+
     const token = localStorage.getItem('token');
+    console.log('Dashboard - Token from localStorage:', token ? 'Found' : 'Not found');
+    
     if (!token) {
-      console.log('No token found, redirecting to login');
+      console.log('Dashboard - No token found, redirecting to login');
       router.push('/login');
       return;
     }
@@ -39,25 +46,32 @@ export default function DashboardPage() {
         });
 
         const userData = await userResponse.json();
-        console.log('User response:', userData);
+        console.log('Dashboard - User response:', userData);
 
         if (!userResponse.ok) {
+          console.log('Dashboard - Token verification failed:', userData.error);
           throw new Error(userData.error || 'Failed to verify token');
         }
+        
+        console.log('Dashboard - User role:', userData.user.role);
         setUser(userData.user);
 
         // Redirect based on user role
         if (userData.user.role === 'admin') {
+          console.log('Dashboard - Admin role detected, redirecting to academy dashboard');
           router.push('/pages/academy-dashboard');
           return;
         }
 
         // Only super admin should see this dashboard
         if (userData.user.role !== 'super_admin') {
+          console.log('Dashboard - Access denied for role:', userData.user.role);
           setError('Access denied. Super admin privileges required.');
           setIsLoading(false);
           return;
         }
+
+        console.log('Dashboard - Super admin confirmed, proceeding to load dashboard data');
 
         // Fetch dashboard stats from multiple APIs
         const [setupResponse, playersResponse, eventsResponse] = await Promise.all([
@@ -101,10 +115,12 @@ export default function DashboardPage() {
         });
 
       } catch (err) {
-        console.error('Dashboard error:', err.message);
+        console.error('Dashboard - Error:', err.message);
+        console.error('Dashboard - Full error:', err);
         setError(err.message);
-        localStorage.removeItem('token');
-        router.push('/login');
+        // Don't remove token immediately, let user see the error
+        // localStorage.removeItem('token');
+        // router.push('/login');
       } finally {
         setIsLoading(false);
       }
