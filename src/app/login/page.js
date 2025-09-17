@@ -55,19 +55,21 @@ export default function LoginPage() {
       console.log('Role stored:', data.user.role);
 
       if (data.message === 'Login successful') {
-        console.log('Initiating redirect in 2 seconds');
-        setTimeout(async () => {
+        console.log('Redirecting immediately based on role');
+        try {
           if (data.user.role === 'admin') {
-            await router.push('/pages/academy-dashboard');
+            await router.replace('/pages/academy-dashboard');
           } else if (data.user.role === 'super_admin') {
-            await router.push('/pages/dashboard');
+            await router.replace('/pages/dashboard');
           } else if (data.user.role === 'coach') {
-            await router.push('/pages/dashboard');
+            await router.replace('/pages/dashboard');
           } else {
-            await router.push('/pages/dashboard');
+            await router.replace('/pages/dashboard');
           }
           console.log('Redirect completed');
-        }, 2000);
+        } finally {
+          setIsLoading(false);
+        }
       } else {
         throw new Error(data.error || 'Unexpected response from server');
       }
