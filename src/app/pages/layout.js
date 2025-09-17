@@ -48,7 +48,7 @@ function AuthenticatedLayout({ isSidebarOpen, toggleSidebar, children }) {
   }, [router, logout]);
 
   useEffect(() => {
-    if (!isLoading && !['admin', 'coach', 'player', 'scout'].includes(role)) {
+    if (!isLoading && !['admin', 'super_admin', 'coach', 'player', 'scout'].includes(role)) {
       console.log('Invalid role, redirecting to login');
       router.push('/login');
     }
