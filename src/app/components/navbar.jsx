@@ -68,7 +68,7 @@ export default function Navbar({ toggleSidebar, isSidebarOpen }) {
                 />
               </div>
               <h1 className="text-xl font-semibold text-gray-900">
-                Quick Touch Academy
+                Football Academy
               </h1>
             </div>
           </div>

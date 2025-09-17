@@ -59,11 +59,11 @@ export async function POST(request) {
       academy = await prisma.academy.create({
         data: {
           id: academyId,
-          name: 'Quick Touch Academy',
+          name: 'Football Academy',
           location: 'Default Location',
           description: 'Default academy for new users',
-          contactEmail: 'info@quicktouchacademy.com',
-          contactPhone: '+92-300-1234567',
+          contactEmail: 'info@footballacademy.com',
+          contactPhone: '+1-555-1234567',
           adminIds: '',
           createdAt: new Date(),
         }
@@ -145,13 +145,13 @@ export async function POST(request) {
       const emailHtml = `
         <div style="background-color: #1C2526; padding: 20px; color: #FFFFFF; font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
           <div style="text-align: center; margin-bottom: 30px;">
-            <h1 style="color: #FFB300; margin: 0;">Quick Touch Academy</h1>
+            <h1 style="color: #FFB300; margin: 0;">Football Academy</h1>
             <p style="color: #FFFFFF; margin: 5px 0;">Football Training Excellence</p>
           </div>
           
-          <h2 style="color: #FFB300;">Welcome to Quick Touch Academy!</h2>
+          <h2 style="color: #FFB300;">Welcome to Football Academy!</h2>
           <p>Hi ${fullName},</p>
-          <p>Thank you for registering with Quick Touch Academy. Please verify your email address by clicking the button below:</p>
+          <p>Thank you for registering with our Football Academy. Please verify your email address by clicking the button below:</p>
           
           <div style="text-align: center; margin: 30px 0;">
             <a href="${verificationUrl}" style="background-color: #FFB300; color: #1C2526; padding: 15px 30px; text-decoration: none; border-radius: 8px; display: inline-block; font-weight: bold; font-size: 16px;">Verify My Email Address</a>
@@ -168,20 +168,20 @@ export async function POST(request) {
             <strong>Account Details:</strong><br>
             Email: ${email}<br>
             Role: ${role}<br>
-            Academy: Quick Touch Academy
+            Academy: Football Academy
           </p>
           
           <p style="color: #CCCCCC; font-size: 12px; text-align: center; margin-top: 30px;">
             Best regards,<br>
-            <strong>Quick Touch Academy Team</strong>
+            <strong>Football Academy Team</strong>
           </p>
         </div>
       `;
 
       await transporter.sendMail({
-        from: `"Quick Touch Academy" <${process.env.EMAIL_USER}>`,
+        from: `"Football Academy" <${process.env.EMAIL_USER}>`,
         to: email,
-        subject: 'Verify Your Email - Quick Touch Academy',
+        subject: 'Verify Your Email - Football Academy',
         html: emailHtml,
       });
     } catch (emailError) {

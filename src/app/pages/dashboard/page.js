@@ -320,7 +320,7 @@ export default function DashboardPage() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div>
             <h4 className="font-medium text-gray-900 mb-2">Academy Name</h4>
-            <p className="text-gray-600">Quick Touch Academy</p>
+            <p className="text-gray-600">Football Academy</p>
           </div>
       <div>
             <h4 className="font-medium text-gray-900 mb-2">Location</h4>

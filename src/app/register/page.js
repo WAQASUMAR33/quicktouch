@@ -79,18 +79,18 @@ export default function RegisterPage() {
         setAcademies([
           {
             id: 'academy-main-campus',
-            name: 'Quick Touch Academy - Main Campus',
-            location: 'Lahore, Pakistan'
+            name: 'Football Academy - Main Campus',
+            location: 'Main City, Country'
           },
           {
-            id: 'academy-karachi-branch', 
-            name: 'Quick Touch Academy - Karachi Branch',
-            location: 'Karachi, Pakistan'
+            id: 'academy-branch-1', 
+            name: 'Football Academy - Branch 1',
+            location: 'Branch City, Country'
           },
           {
-            id: 'academy-islamabad-branch',
-            name: 'Quick Touch Academy - Islamabad Branch', 
-            location: 'Islamabad, Pakistan'
+            id: 'academy-branch-2',
+            name: 'Football Academy - Branch 2', 
+            location: 'Branch City 2, Country'
           }
         ]);
         setAcademiesError('');
@@ -297,7 +297,7 @@ export default function RegisterPage() {
             </div>
             
             <p className="text-sm text-white/50">
-              Thank you for your interest in joining Quick Touch Academy!
+              Thank you for your interest in joining our Football Academy!
             </p>
           </div>
         </div>
@@ -329,7 +329,7 @@ export default function RegisterPage() {
                 priority
               />
             </div>
-            <h1 className="text-3xl font-bold text-white mb-2">Join Quick Touch Academy</h1>
+            <h1 className="text-3xl font-bold text-white mb-2">Join Football Academy</h1>
             <p className="text-white/70">Create your account or register your academy</p>
           </div>
 

@@ -30,7 +30,7 @@ export async function POST() {
     const academy = await prisma.academy.create({
       data: {
         id: uuidv4(),
-        name: "Quick Touch Academy",
+        name: "Football Academy",
         location: "Default Location",
         adminIds: "[]" // Empty JSON array as string
       }
