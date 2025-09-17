@@ -96,7 +96,7 @@ export default function Sidebar({ isOpen, toggleSidebar }) {
     // Coach - Limited access
     if (user.role === 'coach') {
       return [
-        { href: '/pages/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+        { href: '/pages/coach-dashboard', label: 'Dashboard', icon: LayoutDashboard },
         { href: '/pages/players_management', label: 'Players', icon: Users },
         { href: '/pages/event_management', label: 'Events & Matches', icon: Calendar },
         { href: '/pages/messaging', label: 'Messaging', icon: MessageSquare },

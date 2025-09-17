@@ -65,8 +65,8 @@ export default function LoginPage() {
           console.log('Redirecting super_admin to dashboard');
           router.replace('/pages/dashboard');
         } else if (data.user.role === 'coach') {
-          console.log('Redirecting coach to dashboard');
-          router.replace('/pages/dashboard');
+          console.log('Redirecting coach to coach dashboard');
+          router.replace('/pages/coach-dashboard');
         } else {
           console.log('Redirecting other role to dashboard');
           router.replace('/pages/dashboard');

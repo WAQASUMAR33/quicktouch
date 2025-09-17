@@ -63,6 +63,12 @@ export default function DashboardPage() {
           return;
         }
 
+        if (userData.user.role === 'coach') {
+          console.log('Dashboard - Coach role detected, redirecting to coach dashboard');
+          router.push('/pages/coach-dashboard');
+          return;
+        }
+
         // Only super admin should see this dashboard
         if (userData.user.role !== 'super_admin') {
           console.log('Dashboard - Access denied for role:', userData.user.role);
