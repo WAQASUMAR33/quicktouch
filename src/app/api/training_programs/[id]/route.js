@@ -1,341 +1,215 @@
 import { NextResponse } from "next/server";
 import prisma from "../../../lib/prisma";
+import jwt from 'jsonwebtoken';
 
-// GET: Fetch a single sale by ID
+// Helper function to get user from JWT token
+async function getUserFromToken(request) {
+  try {
+    const authHeader = request.headers.get('authorization');
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return null;
+    }
+    
+    const token = authHeader.substring(7);
+    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-jwt-secret');
+    return decoded;
+  } catch (error) {
+    return null;
+  }
+}
+
+// GET: Fetch a single training program by ID
 export async function GET(request, { params }) {
   try {
-    const { id } = params;
-    const saleId = parseInt(id);
-
-    if (isNaN(saleId)) {
-      return NextResponse.json(
-        { error: "Invalid sale ID" },
-        { status: 400 }
-      );
+    const user = await getUserFromToken(request);
+    if (!user?.userId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const sale = await prisma.sale.findUnique({
-      where: { sale_id: saleId },
-      select: {
-        sale_id: true,
-        p_id: true,
-        sup_id: true,
-        product: {
-          select: {
-            p_id: true,
-            p_title: true,
-          },
+    const { id } = params;
+
+    const program = await prisma.trainingPlan.findUnique({
+      where: { id },
+      include: {
+        Academy: {
+          select: { id: true, name: true, location: true }
         },
-        supplier: {
-          select: {
-            sup_id: true,
-            sup_name: true,
-          },
-        },
-        amount_per_bag: true,
-        no_of_bags: true,
-        freight_per_bag: true,
-        total_amount: true,
-        tax_1: true,
-        tax_2: true,
-        tax_3: true,
-        net_total: true,
-        vehicle_no: true,
-        created_at: true,
-        updated_at: true,
-        saleDetails: {
-          select: {
-            sales_details_id: true,
-            v_no: true,
-            p_id: true,
-            no_of_bags: true,
-            unit_rate: true,
-            freight: true,
-            total_amount: true,
-          },
-        },
-      },
+        User: {
+          select: { id: true, fullName: true, email: true }
+        }
+      }
     });
 
-    if (!sale) {
+    if (!program) {
       return NextResponse.json(
-        { error: "Sale not found" },
+        { error: "Training program not found" },
         { status: 404 }
       );
     }
 
-    return NextResponse.json(sale, { status: 200 });
+    // Check if user has access to this program
+    if (user.role !== 'admin' && program.academyId !== user.academyId) {
+      return NextResponse.json({ error: 'Access denied' }, { status: 403 });
+    }
+
+    return NextResponse.json(program, { status: 200 });
   } catch (error) {
     console.error("GET Error:", error);
     return NextResponse.json(
-      { error: "Failed to fetch sale", details: error.message },
+      { error: "Failed to fetch training program", details: error.message },
       { status: 500 }
     );
+  } finally {
+    await prisma.$disconnect();
   }
 }
 
-// PUT: Update a sale by ID
+// PUT: Update a training program by ID
 export async function PUT(request, { params }) {
   try {
+    const user = await getUserFromToken(request);
+    if (!user?.userId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    // Only coaches and admins can update training programs
+    if (!['admin', 'coach'].includes(user.role)) {
+      return NextResponse.json({ error: 'Access denied' }, { status: 403 });
+    }
+
     const { id } = params;
-    const saleId = parseInt(id);
+    const data = await request.json();
 
-    if (isNaN(saleId)) {
-      return NextResponse.json(
-        { error: "Invalid sale ID" },
-        { status: 400 }
-      );
-    }
-
-    // Parse JSON with error handling
-    let data;
-    try {
-      data = await request.json();
-    } catch (jsonError) {
-      console.error("JSON Parse Error:", jsonError.message);
-      return NextResponse.json(
-        { error: "Invalid JSON payload", details: jsonError.message },
-        { status: 400 }
-      );
-    }
-
-    // Validate that at least one field is provided
-    if (
-      !data.p_id &&
-      !data.sup_id &&
-      data.amount_per_bag === undefined &&
-      data.no_of_bags === undefined &&
-      data.freight_per_bag === undefined &&
-      data.total_amount === undefined &&
-      data.tax_1 === undefined &&
-      data.tax_2 === undefined &&
-      data.tax_3 === undefined &&
-      data.net_total === undefined &&
-      !data.vehicle_no
-    ) {
-      return NextResponse.json(
-        { error: "At least one field must be provided for update" },
-        { status: 400 }
-      );
-    }
-
-    // Validate numeric fields if provided
-    let productId, supplierId, amountPerBag, noOfBags, freightPerBag, totalAmount, netTotal, tax1, tax2, tax3;
-    if (data.p_id) {
-      productId = parseInt(data.p_id);
-      if (isNaN(productId)) {
-        return NextResponse.json(
-          { error: "Invalid p_id: must be a valid number" },
-          { status: 400 }
-        );
-      }
-      const product = await prisma.product.findUnique({
-        where: { p_id: productId },
-      });
-      if (!product) {
-        return NextResponse.json(
-          { error: "Product not found" },
-          { status: 404 }
-        );
-      }
-    }
-
-    if (data.sup_id) {
-      supplierId = parseInt(data.sup_id);
-      if (isNaN(supplierId)) {
-        return NextResponse.json(
-          { error: "Invalid sup_id: must be a valid number" },
-          { status: 400 }
-        );
-      }
-      const supplier = await prisma.supplier.findUnique({
-        where: { sup_id: supplierId },
-      });
-      if (!supplier) {
-        return NextResponse.json(
-          { error: "Supplier not found" },
-          { status: 404 }
-        );
-      }
-    }
-
-    if (data.amount_per_bag !== undefined) {
-      amountPerBag = parseFloat(data.amount_per_bag);
-      if (isNaN(amountPerBag) || amountPerBag < 0) {
-        return NextResponse.json(
-          { error: "Invalid amount_per_bag: must be a non-negative number" },
-          { status: 400 }
-        );
-      }
-    }
-
-    if (data.no_of_bags !== undefined) {
-      noOfBags = parseInt(data.no_of_bags);
-      if (isNaN(noOfBags) || noOfBags <= 0) {
-        return NextResponse.json(
-          { error: "Invalid no_of_bags: must be a positive integer" },
-          { status: 400 }
-        );
-      }
-    }
-
-    if (data.freight_per_bag !== undefined) {
-      freightPerBag = parseFloat(data.freight_per_bag);
-      if (isNaN(freightPerBag) || freightPerBag < 0) {
-        return NextResponse.json(
-          { error: "Invalid freight_per_bag: must be a non-negative number" },
-          { status: 400 }
-        );
-      }
-    }
-
-    if (data.total_amount !== undefined) {
-      totalAmount = parseFloat(data.total_amount);
-      if (isNaN(totalAmount) || totalAmount < 0) {
-        return NextResponse.json(
-          { error: "Invalid total_amount: must be a non-negative number" },
-          { status: 400 }
-        );
-      }
-    }
-
-    if (data.net_total !== undefined) {
-      netTotal = parseFloat(data.net_total);
-      if (isNaN(netTotal) || netTotal < 0) {
-        return NextResponse.json(
-          { error: "Invalid net_total: must be a non-negative number" },
-          { status: 400 }
-        );
-      }
-    }
-
-    if (data.tax_1 !== undefined) {
-      tax1 = parseFloat(data.tax_1);
-      if (isNaN(tax1)) {
-        return NextResponse.json(
-          { error: "Invalid tax_1: must be a valid number" },
-          { status: 400 }
-        );
-      }
-    }
-
-    if (data.tax_2 !== undefined) {
-      tax2 = parseFloat(data.tax_2);
-      if (isNaN(tax2)) {
-        return NextResponse.json(
-          { error: "Invalid tax_2: must be a valid number" },
-          { status: 400 }
-        );
-      }
-    }
-
-    if (data.tax_3 !== undefined) {
-      tax3 = parseFloat(data.tax_3);
-      if (isNaN(tax3)) {
-        return NextResponse.json(
-          { error: "Invalid tax_3: must be a valid number" },
-          { status: 400 }
-        );
-      }
-    }
-
-    // Update sale
-    const sale = await prisma.sale.update({
-      where: { sale_id: saleId },
-      data: {
-        p_id: productId,
-        sup_id: supplierId,
-        amount_per_bag: amountPerBag,
-        no_of_bags: noOfBags,
-        freight_per_bag: freightPerBag,
-        total_amount: totalAmount,
-        tax_1: tax1,
-        tax_2: tax2,
-        tax_3: tax3,
-        net_total: netTotal,
-        vehicle_no: data.vehicle_no,
-      },
+    // Check if program exists and user has access
+    const existingProgram = await prisma.trainingPlan.findUnique({
+      where: { id },
+      select: { academyId: true, coachId: true }
     });
 
-    return NextResponse.json(
-      {
-        id: sale.sale_id,
-        p_id: sale.p_id,
-        sup_id: sale.sup_id,
-        amount_per_bag: sale.amount_per_bag,
-        no_of_bags: sale.no_of_bags,
-        freight_per_bag: sale.freight_per_bag,
-        total_amount: sale.total_amount,
-        tax_1: sale.tax_1,
-        tax_2: sale.tax_2,
-        tax_3: sale.tax_3,
-        net_total: sale.net_total,
-        vehicle_no: sale.vehicle_no,
-        created_at: sale.created_at,
-        updated_at: sale.updated_at,
-        message: "Sale updated successfully",
+    if (!existingProgram) {
+      return NextResponse.json(
+        { error: "Training program not found" },
+        { status: 404 }
+      );
+    }
+
+    // Check access permissions
+    if (user.role !== 'admin' && existingProgram.academyId !== user.academyId) {
+      return NextResponse.json({ error: 'Access denied' }, { status: 403 });
+    }
+
+    // Only the coach who created it or admin can edit
+    if (user.role !== 'admin' && existingProgram.coachId !== user.userId) {
+      return NextResponse.json({ error: 'Access denied' }, { status: 403 });
+    }
+
+    const program = await prisma.trainingPlan.update({
+      where: { id },
+      data: {
+        title: data.title,
+        description: data.description,
+        drills: data.drills,
+        date: data.date ? new Date(data.date) : undefined,
       },
-      { status: 200 }
-    );
+      include: {
+        Academy: {
+          select: { id: true, name: true, location: true }
+        },
+        User: {
+          select: { id: true, fullName: true, email: true }
+        }
+      }
+    });
+
+    return NextResponse.json({
+      id: program.id,
+      title: program.title,
+      description: program.description,
+      drills: program.drills,
+      date: program.date,
+      coachId: program.coachId,
+      academyId: program.academyId,
+      academy: program.Academy,
+      coach: program.User,
+      createdAt: program.createdAt,
+      message: "Training program updated successfully",
+    }, { status: 200 });
   } catch (error) {
     console.error("PUT Error:", error);
     if (error.code === "P2025") {
       return NextResponse.json(
-        { error: "Sale not found" },
+        { error: "Training program not found" },
         { status: 404 }
       );
     }
-    if (error.code === "P2003") {
-      return NextResponse.json(
-        { error: "Invalid product ID or supplier ID" },
-        { status: 400 }
-      );
-    }
     return NextResponse.json(
-      { error: "Failed to update sale", details: error.message },
+      { error: "Failed to update training program", details: error.message },
       { status: 500 }
     );
+  } finally {
+    await prisma.$disconnect();
   }
 }
 
-// DELETE: Delete a sale by ID
+// DELETE: Delete a training program by ID
 export async function DELETE(request, { params }) {
   try {
-    const { id } = params;
-    const saleId = parseInt(id);
+    const user = await getUserFromToken(request);
+    if (!user?.userId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
 
-    if (isNaN(saleId)) {
+    // Only coaches and admins can delete training programs
+    if (!['admin', 'coach'].includes(user.role)) {
+      return NextResponse.json({ error: 'Access denied' }, { status: 403 });
+    }
+
+    const { id } = params;
+
+    // Check if program exists and user has access
+    const existingProgram = await prisma.trainingPlan.findUnique({
+      where: { id },
+      select: { academyId: true, coachId: true }
+    });
+
+    if (!existingProgram) {
       return NextResponse.json(
-        { error: "Invalid sale ID" },
-        { status: 400 }
+        { error: "Training program not found" },
+        { status: 404 }
       );
     }
 
-    await prisma.sale.delete({
-      where: { sale_id: saleId },
+    // Check access permissions
+    if (user.role !== 'admin' && existingProgram.academyId !== user.academyId) {
+      return NextResponse.json({ error: 'Access denied' }, { status: 403 });
+    }
+
+    // Only the coach who created it or admin can delete
+    if (user.role !== 'admin' && existingProgram.coachId !== user.userId) {
+      return NextResponse.json({ error: 'Access denied' }, { status: 403 });
+    }
+
+    await prisma.trainingPlan.delete({
+      where: { id }
     });
 
     return NextResponse.json(
-      { message: "Sale deleted successfully" },
+      { message: "Training program deleted successfully" },
       { status: 200 }
     );
   } catch (error) {
     console.error("DELETE Error:", error);
     if (error.code === "P2025") {
       return NextResponse.json(
-        { error: "Sale not found" },
+        { error: "Training program not found" },
         { status: 404 }
       );
     }
-    if (error.code === "P2003") {
-      return NextResponse.json(
-        { error: "Cannot delete sale with associated sale details" },
-        { status: 400 }
-      );
-    }
     return NextResponse.json(
-      { error: "Failed to delete sale", details: error.message },
+      { error: "Failed to delete training program", details: error.message },
       { status: 500 }
     );
+  } finally {
+    await prisma.$disconnect();
   }
 }

@@ -148,9 +148,9 @@ export default function TrainingProgramsPage() {
                   </div>
                   <div className="flex items-center text-gray-600">
                     <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                     </svg>
-                    <span>Duration: {program.duration || 'Not specified'}</span>
+                    <span>Coach: {program.User?.fullName || 'Not specified'}</span>
                   </div>
                 </div>
 
@@ -207,9 +207,9 @@ export default function TrainingProgramsPage() {
             </div>
             <div className="text-center">
               <p className="text-2xl font-bold text-orange-600">
-                {programs.filter(p => p.duration && p.duration.includes('week')).length}
+                {programs.filter(p => p.drills && p.drills.length > 0).length}
               </p>
-              <p className="text-gray-600">Weekly Programs</p>
+              <p className="text-gray-600">Programs with Drills</p>
             </div>
           </div>
         </div>

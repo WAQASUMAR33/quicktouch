@@ -28,7 +28,6 @@ export async function GET(request) {
 
     const { searchParams } = new URL(request.url);
     const academyId = searchParams.get('academyId');
-    const type = searchParams.get('type');
 
     let whereClause = {};
 
@@ -46,26 +45,14 @@ export async function GET(request) {
       whereClause.academyId = academyId;
     }
 
-    // Filter by type if specified
-    if (type) {
-      whereClause.type = type;
-    }
-
-    const programs = await prisma.trainingProgram.findMany({
+    const programs = await prisma.trainingPlan.findMany({
       where: whereClause,
       include: {
         Academy: {
           select: { id: true, name: true, location: true }
         },
-        attendance: {
-          select: {
-            id: true,
-            playerId: true,
-            status: true,
-            player: {
-              select: { fullName: true, position: true }
-            }
-          }
+        User: {
+          select: { id: true, fullName: true, email: true }
         }
       },
       orderBy: { date: 'desc' }
@@ -99,9 +86,9 @@ export async function POST(request) {
     const data = await request.json();
 
     // Validate required fields
-    if (!data.title || !data.date || !data.location) {
+    if (!data.title || !data.date) {
       return NextResponse.json(
-        { error: 'Missing required fields: title, date, location' },
+        { error: 'Missing required fields: title, date' },
         { status: 400 }
       );
     }
@@ -116,14 +103,13 @@ export async function POST(request) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
-    const program = await prisma.trainingProgram.create({
+    const program = await prisma.trainingPlan.create({
       data: {
         title: data.title,
         description: data.description || '',
+        drills: data.drills || '',
         date: new Date(data.date),
-        location: data.location,
-        duration: data.duration || '',
-        type: data.type || 'training',
+        coachId: user.userId,
         academyId: userRecord.academyId
       },
       include: {
@@ -137,10 +123,9 @@ export async function POST(request) {
       id: program.id,
       title: program.title,
       description: program.description,
+      drills: program.drills,
       date: program.date,
-      location: program.location,
-      duration: program.duration,
-      type: program.type,
+      coachId: program.coachId,
       academyId: program.academyId,
       academy: program.Academy,
       createdAt: program.createdAt,
