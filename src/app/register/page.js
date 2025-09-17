@@ -291,7 +291,7 @@ export default function RegisterPage() {
               <p className="text-sm text-white/80">
                 <strong>What happens next:</strong><br />
                 1. Our admin team will review your application<br />
-                2. You'll receive an email with approval status<br />
+                2. You&apos;ll receive an email with approval status<br />
                 3. Once approved, you can log in and access your academy dashboard
               </p>
             </div>

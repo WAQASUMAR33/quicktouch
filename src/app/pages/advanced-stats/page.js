@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import AdvancedStatsDashboard from '../../components/advanced-stats/AdvancedStatsDashboard';
 
@@ -25,9 +25,9 @@ export default function AdvancedStatsPage() {
     }
 
     fetchPlayers(token);
-  }, [router]);
+  }, [router, fetchPlayers]);
 
-  const fetchPlayers = async (token) => {
+  const fetchPlayers = useCallback(async (token) => {
     try {
       const response = await fetch('/api/players_management', {
         headers: {
@@ -53,7 +53,7 @@ export default function AdvancedStatsPage() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [user]);
 
   if (isLoading) {
     return (
