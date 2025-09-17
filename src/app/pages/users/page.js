@@ -80,8 +80,8 @@ export default function UserManagementPage() {
         return;
       }
       // Validate role
-      if (!['admin', 'coach', 'player', 'scout'].includes(formData.role)) {
-        throw new Error('Please select a valid role (admin, coach, player, or scout)');
+      if (!['admin', 'coach', 'player', 'scout', 'super_admin'].includes(formData.role)) {
+        throw new Error('Please select a valid role (admin, coach, player, scout, or super_admin)');
       }
       const method = selectedUser ? 'PUT' : 'POST';
       const url = selectedUser ? `/api/users/${selectedUser.id}` : '/api/users';
@@ -297,6 +297,7 @@ export default function UserManagementPage() {
                   required
                 >
                   <option value="">Select Role</option>
+                  <option value="super_admin">Super Admin</option>
                   <option value="admin">Admin</option>
                   <option value="coach">Coach</option>
                   <option value="player">Player</option>
