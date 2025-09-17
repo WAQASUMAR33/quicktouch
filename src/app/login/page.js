@@ -58,6 +58,8 @@ export default function LoginPage() {
         console.log('Initiating redirect in 2 seconds');
         setTimeout(async () => {
           if (data.user.role === 'admin') {
+            await router.push('/pages/academy-dashboard');
+          } else if (data.user.role === 'super_admin') {
             await router.push('/pages/dashboard');
           } else if (data.user.role === 'coach') {
             await router.push('/pages/dashboard');

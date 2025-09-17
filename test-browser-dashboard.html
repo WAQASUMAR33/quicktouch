@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ccc; border-radius: 5px; }
+        .success { background-color: #d4edda; border-color: #c3e6cb; }
+        .error { background-color: #f8d7da; border-color: #f5c6cb; }
+        .info { background-color: #d1ecf1; border-color: #bee5eb; }
+        button { padding: 10px 20px; margin: 5px; cursor: pointer; }
+        pre { background-color: #f8f9fa; padding: 10px; border-radius: 3px; overflow-x: auto; }
+    </style>
+</head>
+<body>
+    <h1>Dashboard Access Test</h1>
+    
+    <div class="test-section info">
+        <h3>Test Steps:</h3>
+        <ol>
+            <li>Login as admin</li>
+            <li>Store token in localStorage</li>
+            <li>Test token verification</li>
+            <li>Try to access dashboard</li>
+        </ol>
+    </div>
+
+    <div class="test-section">
+        <h3>Step 1: Admin Login</h3>
+        <button onclick="testLogin()">Login as Admin</button>
+        <div id="loginResult"></div>
+    </div>
+
+    <div class="test-section">
+        <h3>Step 2: Token Verification</h3>
+        <button onclick="testTokenVerification()">Verify Token</button>
+        <div id="verifyResult"></div>
+    </div>
+
+    <div class="test-section">
+        <h3>Step 3: Dashboard Access</h3>
+        <button onclick="testDashboardAccess()">Test Dashboard Access</button>
+        <div id="dashboardResult"></div>
+    </div>
+
+    <div class="test-section">
+        <h3>Console Logs</h3>
+        <div id="consoleLogs"></div>
+    </div>
+
+    <script>
+        let authToken = null;
+
+        function log(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            const logDiv = document.getElementById('consoleLogs');
+            const logEntry = document.createElement('div');
+            logEntry.innerHTML = `<strong>[${timestamp}]</strong> ${message}`;
+            logEntry.className = type;
+            logDiv.appendChild(logEntry);
+            console.log(message);
+        }
+
+        async function testLogin() {
+            log('Starting admin login test...');
+            const resultDiv = document.getElementById('loginResult');
+            
+            try {
+                const response = await fetch('/api/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        email: 'admin@quicktouch.com',
+                        password: 'admin123'
+                    })
+                });
+
+                const data = await response.json();
+                
+                if (response.ok) {
+                    authToken = data.token;
+                    localStorage.setItem('token', authToken);
+                    resultDiv.innerHTML = `
+                        <div class="success">
+                            <h4>✅ Login Successful!</h4>
+                            <p><strong>User Role:</strong> ${data.user.role}</p>
+                            <p><strong>User Name:</strong> ${data.user.fullName}</p>
+                            <p><strong>Token:</strong> ${authToken ? 'Generated' : 'Not provided'}</p>
+                        </div>
+                    `;
+                    log(`Login successful - Role: ${data.user.role}, Name: ${data.user.fullName}`);
+                } else {
+                    resultDiv.innerHTML = `
+                        <div class="error">
+                            <h4>❌ Login Failed!</h4>
+                            <p><strong>Status:</strong> ${response.status}</p>
+                            <p><strong>Error:</strong> ${data.error || 'Unknown error'}</p>
+                        </div>
+                    `;
+                    log(`Login failed - Status: ${response.status}, Error: ${data.error}`);
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="error">
+                        <h4>❌ Login Error!</h4>
+                        <p><strong>Error:</strong> ${error.message}</p>
+                    </div>
+                `;
+                log(`Login error: ${error.message}`, 'error');
+            }
+        }
+
+        async function testTokenVerification() {
+            log('Starting token verification test...');
+            const resultDiv = document.getElementById('verifyResult');
+            
+            if (!authToken) {
+                resultDiv.innerHTML = `
+                    <div class="error">
+                        <h4>❌ No Token!</h4>
+                        <p>Please login first.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/auth/verify', {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`,
+                        'Content-Type': 'application/json',
+                    }
+                });
+
+                const data = await response.json();
+                
+                if (response.ok) {
+                    resultDiv.innerHTML = `
+                        <div class="success">
+                            <h4>✅ Token Verification Successful!</h4>
+                            <p><strong>User Role:</strong> ${data.user.role}</p>
+                            <p><strong>User Name:</strong> ${data.user.fullName}</p>
+                            <p><strong>Academy ID:</strong> ${data.user.academyId}</p>
+                            <p><strong>Email Verified:</strong> ${data.user.isEmailVerified}</p>
+                        </div>
+                    `;
+                    log(`Token verification successful - Role: ${data.user.role}`);
+                } else {
+                    resultDiv.innerHTML = `
+                        <div class="error">
+                            <h4>❌ Token Verification Failed!</h4>
+                            <p><strong>Status:</strong> ${response.status}</p>
+                            <p><strong>Error:</strong> ${data.error || 'Unknown error'}</p>
+                        </div>
+                    `;
+                    log(`Token verification failed - Status: ${response.status}, Error: ${data.error}`);
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="error">
+                        <h4>❌ Verification Error!</h4>
+                        <p><strong>Error:</strong> ${error.message}</p>
+                    </div>
+                `;
+                log(`Verification error: ${error.message}`, 'error');
+            }
+        }
+
+        async function testDashboardAccess() {
+            log('Starting dashboard access test...');
+            const resultDiv = document.getElementById('dashboardResult');
+            
+            if (!authToken) {
+                resultDiv.innerHTML = `
+                    <div class="error">
+                        <h4>❌ No Token!</h4>
+                        <p>Please login first.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            try {
+                // Test if we can access the dashboard page
+                const response = await fetch('/pages/dashboard', {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`,
+                        'Content-Type': 'application/json',
+                    }
+                });
+
+                if (response.ok) {
+                    resultDiv.innerHTML = `
+                        <div class="success">
+                            <h4>✅ Dashboard Access Successful!</h4>
+                            <p><strong>Status:</strong> ${response.status}</p>
+                            <p><strong>Content Type:</strong> ${response.headers.get('content-type')}</p>
+                            <p><a href="/pages/dashboard" target="_blank">Open Dashboard in New Tab</a></p>
+                        </div>
+                    `;
+                    log(`Dashboard access successful - Status: ${response.status}`);
+                } else {
+                    resultDiv.innerHTML = `
+                        <div class="error">
+                            <h4>❌ Dashboard Access Failed!</h4>
+                            <p><strong>Status:</strong> ${response.status}</p>
+                            <p><strong>Status Text:</strong> ${response.statusText}</p>
+                        </div>
+                    `;
+                    log(`Dashboard access failed - Status: ${response.status}`);
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="error">
+                        <h4>❌ Dashboard Access Error!</h4>
+                        <p><strong>Error:</strong> ${error.message}</p>
+                    </div>
+                `;
+                log(`Dashboard access error: ${error.message}`, 'error');
+            }
+        }
+
+        // Auto-run tests on page load
+        window.onload = function() {
+            log('Dashboard test page loaded');
+        };
+    </script>
+</body>
+</html>
