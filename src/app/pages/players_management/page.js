@@ -12,26 +12,19 @@ export default function PlayersManagementPage() {
   const router = useRouter();
 
   useEffect(() => {
-    const token = localStorage.getItem('token');
     const userData = localStorage.getItem('user');
     
-    if (!token) {
-      router.push('/login');
-      return;
-    }
-
     if (userData) {
       setUser(JSON.parse(userData));
     }
 
-    fetchPlayers(token);
-  }, [router]);
+    fetchPlayers();
+  }, []);
 
-  const fetchPlayers = async (token) => {
+  const fetchPlayers = async () => {
     try {
       const response = await fetch('/api/players_management', {
         headers: {
-          'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
       });
@@ -53,11 +46,10 @@ export default function PlayersManagementPage() {
     if (!confirm('Are you sure you want to delete this player?')) return;
 
     try {
-      const token = localStorage.getItem('token');
       const response = await fetch(`/api/players_management/${playerId}`, {
         method: 'DELETE',
         headers: {
-          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
         },
       });
 
@@ -66,7 +58,7 @@ export default function PlayersManagementPage() {
       }
 
       // Refresh the players list
-      fetchPlayers(token);
+      fetchPlayers();
     } catch (err) {
       setError(err.message);
     }

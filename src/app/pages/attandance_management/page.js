@@ -27,16 +27,15 @@ export default function AttendanceManagementPage() {
       setUser(JSON.parse(userData));
     }
 
-    fetchData(token);
+    fetchData();
   }, [router]);
 
-  const fetchData = async (token) => {
+  const fetchData = async () => {
     try {
       // Fetch attendance records
       const attendanceResponse = await fetch('/api/attandance_management', {
         headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
+                    'Content-Type': 'application/json',
         },
       });
 
@@ -48,8 +47,7 @@ export default function AttendanceManagementPage() {
       // Fetch players
       const playersResponse = await fetch('/api/players_management', {
         headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
+                    'Content-Type': 'application/json',
         },
       });
 
@@ -61,8 +59,7 @@ export default function AttendanceManagementPage() {
       // Fetch events
       const eventsResponse = await fetch('/api/event_management', {
         headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
+                    'Content-Type': 'application/json',
         },
       });
 
@@ -84,8 +81,7 @@ export default function AttendanceManagementPage() {
       const response = await fetch(`/api/attandance_management/${attendanceId}`, {
         method: 'PUT',
         headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
+                    'Content-Type': 'application/json',
         },
         body: JSON.stringify({ status: newStatus }),
       });
@@ -95,7 +91,7 @@ export default function AttendanceManagementPage() {
       }
 
       // Refresh the attendance list
-      fetchData(token);
+      fetchData();
     } catch (err) {
       setError(err.message);
     }

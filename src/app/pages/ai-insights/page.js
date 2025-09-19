@@ -24,15 +24,14 @@ export default function AIInsightsPage() {
       setUser(JSON.parse(userData));
     }
 
-    fetchPlayers(token);
+    fetchPlayers();
   }, [router, fetchPlayers]);
 
   const fetchPlayers = useCallback(async (token) => {
     try {
       const response = await fetch('/api/players_management', {
         headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
+                    'Content-Type': 'application/json',
         },
       });
       
@@ -126,7 +125,4 @@ export default function AIInsightsPage() {
     </div>
   );
 }
-
-
-
 

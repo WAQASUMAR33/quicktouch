@@ -24,16 +24,10 @@ export default function UserManagementPage() {
   useEffect(() => {
     const fetchUsers = async () => {
       try {
-        const token = localStorage.getItem('token');
-        if (!token) {
-          router.push('/pages/login');
-          return;
-        }
         const response = await fetch('/api/users', {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`,
           },
         });
         if (!response.ok) throw new Error('Failed to fetch users');
@@ -46,7 +40,7 @@ export default function UserManagementPage() {
       }
     };
     fetchUsers();
-  }, [router]);
+  }, []);
 
   // Handle form input changes
   const handleChange = (e) => {
@@ -74,11 +68,6 @@ export default function UserManagementPage() {
   const handleSave = async (e) => {
     e.preventDefault();
     try {
-      const token = localStorage.getItem('token');
-      if (!token) {
-        router.push('/login');
-        return;
-      }
       // Validate role
       if (!['admin', 'coach', 'player', 'scout', 'super_admin'].includes(formData.role)) {
         throw new Error('Please select a valid role (admin, coach, player, scout, or super_admin)');
@@ -89,7 +78,6 @@ export default function UserManagementPage() {
         method,
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
           email: formData.email,
@@ -116,16 +104,10 @@ export default function UserManagementPage() {
   const handleDelete = async (userId) => {
     if (confirm('Are you sure you want to delete this user?')) {
       try {
-        const token = localStorage.getItem('token');
-        if (!token) {
-          router.push('/login');
-          return;
-        }
         const response = await fetch(`/api/users/${userId}`, {
           method: 'DELETE',
           headers: {
             'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`,
           },
         });
         if (!response.ok) throw new Error('Failed to delete user');

@@ -24,15 +24,14 @@ export default function TrainingProgramsPage() {
       setUser(JSON.parse(userData));
     }
 
-    fetchPrograms(token);
+    fetchPrograms();
   }, [router]);
 
-  const fetchPrograms = async (token) => {
+  const fetchPrograms = async () => {
     try {
       const response = await fetch('/api/training_programs', {
         headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
+                    'Content-Type': 'application/json',
         },
       });
 
@@ -57,8 +56,7 @@ export default function TrainingProgramsPage() {
       const response = await fetch(`/api/training_programs/${programId}`, {
         method: 'DELETE',
         headers: {
-          'Authorization': `Bearer ${token}`,
-        },
+                  },
       });
 
       if (!response.ok) {
@@ -66,7 +64,7 @@ export default function TrainingProgramsPage() {
       }
 
       // Refresh the programs list
-      fetchPrograms(token);
+      fetchPrograms();
     } catch (err) {
       setError(err.message);
     }

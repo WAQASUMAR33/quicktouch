@@ -33,13 +33,6 @@ export default function CoachDashboardPage() {
       return;
     }
 
-    const token = localStorage.getItem('token');
-    
-    if (!token) {
-      router.push('/login');
-      return;
-    }
-
     async function fetchDashboardData() {
       try {
         // Fetch user data
@@ -47,8 +40,7 @@ export default function CoachDashboardPage() {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`,
-          },
+                      },
         });
 
         const userData = await userResponse.json();
@@ -88,8 +80,7 @@ export default function CoachDashboardPage() {
     try {
       const response = await fetch('/api/players_management', {
         headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
+                    'Content-Type': 'application/json',
         },
       });
       
@@ -109,8 +100,7 @@ export default function CoachDashboardPage() {
     try {
       const response = await fetch('/api/training_programs', {
         headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
+                    'Content-Type': 'application/json',
         },
       });
       
@@ -130,8 +120,7 @@ export default function CoachDashboardPage() {
     try {
       const response = await fetch('/api/event_management', {
         headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
+                    'Content-Type': 'application/json',
         },
       });
       

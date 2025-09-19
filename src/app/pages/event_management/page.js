@@ -26,16 +26,15 @@ export default function EventManagementPage() {
       setUser(JSON.parse(userData));
     }
 
-    fetchData(token);
+    fetchData();
   }, [router]);
 
-  const fetchData = async (token) => {
+  const fetchData = async () => {
     try {
       // Fetch events
       const eventsResponse = await fetch('/api/event_management', {
         headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
+                    'Content-Type': 'application/json',
         },
       });
 
@@ -63,8 +62,7 @@ export default function EventManagementPage() {
       const response = await fetch(`/api/event_management/${eventId}`, {
         method: 'DELETE',
         headers: {
-          'Authorization': `Bearer ${token}`,
-        },
+                  },
       });
 
       if (!response.ok) {
@@ -72,7 +70,7 @@ export default function EventManagementPage() {
       }
 
       // Refresh the events list
-      fetchData(token);
+      fetchData();
     } catch (err) {
       setError(err.message);
     }

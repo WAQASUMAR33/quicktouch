@@ -23,25 +23,20 @@ export default function DashboardPage() {
       return;
     }
 
-    const token = localStorage.getItem('token');
-    console.log('Dashboard - Token from localStorage:', token ? 'Found' : 'Not found');
-    
-    if (!token) {
-      console.log('Dashboard - No token found, redirecting to login');
-      router.push('/login');
-      return;
+    const userData = localStorage.getItem('user');
+    if (userData) {
+      setUser(JSON.parse(userData));
     }
 
     async function fetchDashboardData() {
       try {
-        console.log('Fetching dashboard data with token:', token);
+        console.log('Fetching dashboard data');
         
         // Fetch user data
         const userResponse = await fetch('/api/auth/verify', {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`,
           },
         });
 
@@ -83,20 +78,17 @@ export default function DashboardPage() {
         const [setupResponse, playersResponse, eventsResponse] = await Promise.all([
           fetch('/api/setup', {
             headers: {
-              'Authorization': `Bearer ${token}`,
-              'Content-Type': 'application/json',
+                            'Content-Type': 'application/json',
             },
           }),
           fetch('/api/players_management', {
             headers: {
-              'Authorization': `Bearer ${token}`,
-              'Content-Type': 'application/json',
+                            'Content-Type': 'application/json',
             },
           }),
           fetch('/api/event_management', {
             headers: {
-              'Authorization': `Bearer ${token}`,
-              'Content-Type': 'application/json',
+                            'Content-Type': 'application/json',
             },
           })
         ]);
