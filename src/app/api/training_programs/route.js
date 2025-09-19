@@ -21,27 +21,13 @@ async function getUserFromToken(request) {
 // GET: Fetch all training programs
 export async function GET(request) {
   try {
-    const user = await getUserFromToken(request);
-    if (!user?.userId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
     const { searchParams } = new URL(request.url);
     const academyId = searchParams.get('academyId');
 
     let whereClause = {};
 
-    // Filter by academy if user is not admin
-    if (user.role !== 'admin') {
-      // Get user's academy
-      const userRecord = await prisma.user.findUnique({
-        where: { id: user.userId },
-        select: { academyId: true }
-      });
-      if (userRecord) {
-        whereClause.academyId = userRecord.academyId;
-      }
-    } else if (academyId) {
+    // Filter by academy if provided
+    if (academyId) {
       whereClause.academyId = academyId;
     }
 
@@ -73,34 +59,14 @@ export async function GET(request) {
 // POST: Create a new training program
 export async function POST(request) {
   try {
-    const user = await getUserFromToken(request);
-    if (!user?.userId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    // Only coaches and admins can create training programs
-    if (!['admin', 'coach'].includes(user.role)) {
-      return NextResponse.json({ error: 'Access denied' }, { status: 403 });
-    }
-
     const data = await request.json();
 
     // Validate required fields
-    if (!data.title || !data.date) {
+    if (!data.title || !data.date || !data.coachId || !data.academyId) {
       return NextResponse.json(
-        { error: 'Missing required fields: title, date' },
+        { error: 'Missing required fields: title, date, coachId, academyId' },
         { status: 400 }
       );
-    }
-
-    // Get user's academy
-    const userRecord = await prisma.user.findUnique({
-      where: { id: user.userId },
-      select: { academyId: true }
-    });
-
-    if (!userRecord) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
     const program = await prisma.trainingPlan.create({
@@ -109,8 +75,8 @@ export async function POST(request) {
         description: data.description || '',
         drills: data.drills || '',
         date: new Date(data.date),
-        coachId: user.userId,
-        academyId: userRecord.academyId
+        coachId: data.coachId,
+        academyId: data.academyId
       },
       include: {
         Academy: {

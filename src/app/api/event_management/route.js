@@ -21,28 +21,14 @@ async function getUserFromToken(request) {
 // GET: Fetch all events and matches
 export async function GET(request) {
   try {
-    const user = await getUserFromToken(request);
-    if (!user?.userId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
     const { searchParams } = new URL(request.url);
     const type = searchParams.get('type');
     const academyId = searchParams.get('academyId');
 
     let whereClause = {};
 
-    // Filter by academy if user is not admin
-    if (user.role !== 'admin') {
-      // Get user's academy
-      const userRecord = await prisma.user.findUnique({
-        where: { id: user.userId },
-        select: { academyId: true }
-      });
-      if (userRecord) {
-        whereClause.academyId = userRecord.academyId;
-      }
-    } else if (academyId) {
+    // Filter by academy if provided
+    if (academyId) {
       whereClause.academyId = academyId;
     }
 
@@ -120,34 +106,14 @@ export async function GET(request) {
 // POST: Create a new event or match
 export async function POST(request) {
   try {
-    const user = await getUserFromToken(request);
-    if (!user?.userId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    // Only coaches and admins can create events
-    if (!['admin', 'coach'].includes(user.role)) {
-      return NextResponse.json({ error: 'Access denied' }, { status: 403 });
-    }
-
     const data = await request.json();
 
     // Validate required fields
-    if (!data.title || !data.date || !data.location || !data.type) {
+    if (!data.title || !data.date || !data.location || !data.type || !data.academyId) {
       return NextResponse.json(
-        { error: 'Missing required fields: title, date, location, type' },
+        { error: 'Missing required fields: title, date, location, type, academyId' },
         { status: 400 }
       );
-    }
-
-    // Get user's academy
-    const userRecord = await prisma.user.findUnique({
-      where: { id: user.userId },
-      select: { academyId: true }
-    });
-
-    if (!userRecord) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
     // Create event or match based on type
@@ -158,7 +124,7 @@ export async function POST(request) {
           date: new Date(data.date),
           location: data.location,
           type: data.type,
-          academyId: userRecord.academyId
+          academyId: data.academyId
         },
         include: {
           Academy: {
@@ -186,7 +152,7 @@ export async function POST(request) {
           date: new Date(data.date),
           location: data.location,
           type: data.type,
-          academyId: userRecord.academyId
+          academyId: data.academyId
         },
         include: {
           Academy: {

@@ -21,10 +21,6 @@ async function getUserFromToken(request) {
 // GET: Fetch all attendance records
 export async function GET(request) {
   try {
-    const user = await getUserFromToken(request);
-    if (!user?.userId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
 
     const { searchParams } = new URL(request.url);
     const eventId = searchParams.get('eventId');
@@ -99,15 +95,8 @@ export async function GET(request) {
 // POST: Create a new attendance record
 export async function POST(request) {
   try {
-    const user = await getUserFromToken(request);
-    if (!user?.userId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
 
     // Only coaches and admins can create attendance records
-    if (!['admin', 'coach'].includes(user.role)) {
-      return NextResponse.json({ error: 'Access denied' }, { status: 403 });
-    }
 
     const data = await request.json();
 

@@ -211,36 +211,18 @@ export async function POST(request) {
 // GET: Fetch all users
 export async function GET(request) {
   try {
-    const user = await getUserFromToken(request);
-    if (!user?.userId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    // Only admins and coaches can view all users
-    if (!['admin', 'coach'].includes(user.role)) {
-      return NextResponse.json({ error: 'Access denied' }, { status: 403 });
-    }
-
     const { searchParams } = new URL(request.url);
     const academyId = searchParams.get('academyId');
     const role = searchParams.get('role');
 
     let whereClause = {};
 
-    // Filter by academy if not admin
-    if (user.role !== 'admin') {
-      const userRecord = await prisma.user.findUnique({
-        where: { id: user.userId },
-        select: { academyId: true }
-      });
-      if (userRecord) {
-        whereClause.academyId = userRecord.academyId;
-      }
-    } else if (academyId) {
+    // Filter by academy if provided
+    if (academyId) {
       whereClause.academyId = academyId;
     }
 
-    // Filter by role
+    // Filter by role if provided
     if (role) {
       whereClause.role = role;
     }

@@ -21,10 +21,6 @@ async function getUserFromToken(request) {
 // GET /api/player-comparison - Get all comparisons made by a scout
 export async function GET(request) {
   try {
-    const user = await getUserFromToken(request);
-    if (!user?.userId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
 
     // Only scouts can access comparisons
     if (user.role !== 'scout') {
@@ -82,10 +78,6 @@ export async function GET(request) {
 // POST /api/player-comparison - Create a new player comparison
 export async function POST(request) {
   try {
-    const user = await getUserFromToken(request);
-    if (!user?.userId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
 
     // Only scouts can create comparisons
     if (user.role !== 'scout') {

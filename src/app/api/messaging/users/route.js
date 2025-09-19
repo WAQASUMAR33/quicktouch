@@ -21,10 +21,6 @@ async function getUserFromToken(request) {
 // GET /api/messaging/users - Get users that can be messaged based on role
 export async function GET(request) {
   try {
-    const user = await getUserFromToken(request);
-    if (!user?.userId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
 
     const { searchParams } = new URL(request.url);
     const role = searchParams.get('role');

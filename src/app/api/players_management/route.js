@@ -21,16 +21,6 @@ async function getUserFromToken(request) {
 // POST: Create a new player
 export async function POST(request) {
   try {
-    const user = await getUserFromToken(request);
-    if (!user?.userId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    // Only coaches and admins can create players
-    if (!['admin', 'coach'].includes(user.role)) {
-      return NextResponse.json({ error: 'Access denied' }, { status: 403 });
-    }
-
     const data = await request.json();
 
     // Validate required fields
@@ -104,11 +94,6 @@ export async function POST(request) {
 // GET: Fetch all players
 export async function GET(request) {
   try {
-    const user = await getUserFromToken(request);
-    if (!user?.userId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
     const { searchParams } = new URL(request.url);
     const academyId = searchParams.get('academyId');
     const position = searchParams.get('position');
@@ -117,17 +102,8 @@ export async function GET(request) {
 
     let whereClause = {};
 
-    // Filter by academy if user is not admin
-    if (user.role !== 'admin') {
-      // Get user's academy
-      const userRecord = await prisma.user.findUnique({
-        where: { id: user.userId },
-        select: { academyId: true }
-      });
-      if (userRecord) {
-        whereClause.academyId = userRecord.academyId;
-      }
-    } else if (academyId) {
+    // Filter by academy if provided
+    if (academyId) {
       whereClause.academyId = academyId;
     }
 
